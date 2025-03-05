@@ -32,6 +32,11 @@ def init_db():
         db.executescript(f.read())
 
 
+def create_dummy_data():
+    """Create some dummy data to test the API with"""
+    db = get_db()
+
+
 @click.command('init-db')
 def init_db_command():
     init_db()

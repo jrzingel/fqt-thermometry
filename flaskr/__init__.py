@@ -9,7 +9,7 @@ from . import api
 
 def create_app():
     """Application factory for creating the flask app"""
-    app = APIFlask(__name__, instance_relative_config=True)
+    app = APIFlask(__name__, instance_relative_config=True, title="Morello Lab Thermometry", version='1.0')
 
     app.config.from_mapping(
         SECRET_KEY="dev",

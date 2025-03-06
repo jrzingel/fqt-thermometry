@@ -34,13 +34,37 @@ def init_db():
 
 def create_dummy_data():
     """Create some dummy data to test the API with"""
+    import random
+    from datetime import datetime
+
     db = get_db()
+    db.executemany(
+        'INSERT INTO fridges (name) VALUES (?)', [("fridge1",), ("fridge2",)]
+    )
+    db.executemany(
+        'INSERT INTO sensors (fridge, name) VALUES (?, ?) ', [("fridge1", "sensor1"), ("fridge2", "sensor2")]
+    )
+    n = 100
+    random_values = [random.random() for _ in range(n)]
+    random_timestamps = [datetime.now().replace(hour=random.randint(8, 14), minute=random.randint(0, 59), second=random.randint(0, 59)) for _ in range(n)]
+    random_timestamps.sort()
+    tuples = [(t, "fridge1", "sensor1", te) for t, te in zip(random_timestamps, random_values)]
+    db.executemany(
+        'INSERT INTO temperatures (timestamp, fridge, sensor, temp) VALUES (?, ?, ?, ?)', tuples
+    )
+    db.commit()
 
 
 @click.command('init-db')
 def init_db_command():
     init_db()
     click.echo('Initialized the database.')
+
+@click.command('create-dummy-data')
+def create_dummy_data_command():
+    init_db()
+    create_dummy_data()
+    click.echo('Created dummy data.')
 
 sqlite3.register_converter(
     'timestamp', lambda v: datetime.fromisoformat(v.decode())
@@ -51,3 +75,4 @@ def init_app(app):
     """Initialise the app with database knowledge"""
     app.teardown_appcontext(close_db)
     app.cli.add_command(init_db_command)
+    app.cli.add_command(create_dummy_data_command)

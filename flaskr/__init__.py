@@ -1,10 +1,11 @@
 # Root flask function
 
 import os
-from flask import Flask
+from flask import url_for, redirect
 from apiflask import APIFlask
 from . import db
 from . import api
+from . import dashboard
 
 
 def create_app():
@@ -28,12 +29,13 @@ def create_app():
     # Load database
     db.init_app(app)
 
-    # Load API blueprint
+    # Load blueprints
     app.register_blueprint(api.bp)
+    app.register_blueprint(dashboard.bp)
 
     @app.route("/")
     def hello():
-        return "Hello, World!"
+        return redirect(url_for("dashboard.dashboard"))
 
     return app
 

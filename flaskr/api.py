@@ -1,5 +1,5 @@
 # Thermometry API methods
-
+import sqlite3
 
 # Either GET from Javascript or Charizard (for data acquisition)
 # Or POST from listener.py (for data collection)
@@ -8,7 +8,7 @@
 
 from flask import g, request
 from apiflask import APIBlueprint, Schema, abort
-from apiflask.fields import Integer, String, Float, DateTime, Boolean
+from apiflask.fields import Integer, String, Float, DateTime, Boolean, List
 from apiflask.validators import OneOf
 
 from flaskr.db import get_db
@@ -47,12 +47,13 @@ class DefaultResponseSchema(Schema):
     success = Boolean(required=True)
 
 
-@bp.post("/v1/get/latest")
+
+@bp.post("/v1/latest")
 @bp.input(LatestReadingSchema)
 @bp.output(ReadingSchema)
 @bp.doc(summary="Get the latest reading for a particular sensor")
 def getLatestReading(json_data: dict):
-    """Get the temperature of the given fridge device for the specified times."""
+    """Get the latest reading of the given sensor."""
     db = get_db()
     temp_row = db.execute(
         'SELECT * FROM temperatures  WHERE fridge = ? AND sensor = ? ORDER BY timestamp DESC', (json_data["fridge"], json_data["sensor"])
@@ -66,8 +67,36 @@ def getLatestReading(json_data: dict):
     return temp_row
 
 
+@bp.post("/v1/range")
+@bp.input(RangedReadingSchema)
+#@bp.output(ManyReadingSchema)
+@bp.doc(summary="Get all readings for a sensor between two timestamps")
+def getRangeOfReadings(json_data: dict):
+    """Get a range of readings between two timestamps for a given sensor."""
+    db = get_db()
 
-@bp.post("/v1/post/new")
+    # Sanity checks of the input
+    if json_data["earliest_timestamp"] > json_data["latest_timestamp"]:
+        return abort(400, "Earliest timestamp must be before latest timestamp")
+
+    reading_rows = db.execute(
+        'SELECT * from temperatures WHERE fridge = ? AND sensor = ? AND timestamp >= ? AND timestamp <= ? ORDER BY timestamp',
+        (json_data["fridge"], json_data["sensor"], json_data["earliest_timestamp"], json_data["latest_timestamp"])
+    ).fetchall()
+
+    if reading_rows is None:
+        return abort(404, "No readings found")
+
+    rows = []
+    for row in reading_rows:
+        r = dict(row)
+        del r["id"]
+        rows.append(r)
+    return {"readings": rows}
+
+
+
+@bp.post("/v1/new")
 @bp.input(ReadingSchema)
 @bp.output(DefaultResponseSchema)
 @bp.doc(summary="Add a new reading for a given sensor")

@@ -9,6 +9,7 @@
 from flask import g, request
 from apiflask import APIBlueprint, Schema, abort
 from apiflask.fields import Integer, String, Float, DateTime, Boolean
+from apiflask.validators import OneOf
 
 from flaskr.db import get_db
 
@@ -16,56 +17,61 @@ from flaskr.db import get_db
 bp = APIBlueprint("api", __name__, url_prefix="/api")
 
 
-class TemperatureReadingSchema(Schema):
-    """Schema for a single temperature reading"""
+# INPUTS
+
+class ReadingSchema(Schema):
+    """Schema for a single reading to upload"""
     timestamp = DateTime(required=True)
     temp = Float(required=True)
     fridge = String(required=True)
     sensor = String(required=True)
+    #type = String(required=True, validate=OneOf(["temperature", "pressure"]))
 
 
-class TemperatureRequestSchema(Schema):
-    """Schema for a temperature reading request"""
+class LatestReadingSchema(Schema):
+    """Schema for returning the latest reading"""
     fridge = String(required=True)
     sensor = String(required=True)
-    earliest_timestamp = DateTime(required=False)
-    latest_timestamp = DateTime(required=False)
-    latest = Boolean(required=False, default=True)
-    single = Boolean(required=False, default=True)
+    #type = String(required=True, validate=OneOf(["temperature", "pressure"]))
 
+
+class RangedReadingSchema(LatestReadingSchema):
+    """Schema for specifying a range of readings to return"""
+    earliest_timestamp = DateTime(required=False)  # range of times. Ignored if latest flag is set
+    latest_timestamp = DateTime(required=False)
+
+
+# OUTPUTS
 
 class DefaultResponseSchema(Schema):
-    timestamp = DateTime(required=True)
     success = Boolean(required=True)
 
 
-@bp.post("/v1/temp/latest")
-@bp.input(TemperatureRequestSchema)
-@bp.output(TemperatureReadingSchema)
-def getTemperature(json_data: dict):
+@bp.post("/v1/get/latest")
+@bp.input(LatestReadingSchema)
+@bp.output(ReadingSchema)
+@bp.doc(summary="Get the latest reading for a particular sensor")
+def getLatestReading(json_data: dict):
     """Get the temperature of the given fridge device for the specified times."""
     db = get_db()
-    if json_data["single"]:  # Just get the last reading
-        temp_row = db.execute(
-            'SELECT * FROM temperatures WHERE fridge = ? AND sensor = ?', (json_data["fridge"], json_data["sensor"])
-        ).fetchone()
+    temp_row = db.execute(
+        'SELECT * FROM temperatures  WHERE fridge = ? AND sensor = ? ORDER BY timestamp DESC', (json_data["fridge"], json_data["sensor"])
+    ).fetchone()
 
-        if temp_row is None:
-            abort(404, "No temperatures found")
+    if temp_row is None:
+        abort(404, "No readings found")
 
-        temp_row = dict(temp_row)
-        del temp_row["id"]  # Internal only
-        reading = TemperatureReadingSchema(**temp_row)
-        print(reading)
-        return reading
-    else:
-        abort(501, "Not implemented")
+    temp_row = dict(temp_row)
+    del temp_row["id"]  # Internal use only. Don't expose to users
+    return temp_row
 
 
 
-@bp.post("/v1/temp/post")
-@bp.input(TemperatureReadingSchema)
-def setTemperature(json_data: dict):
+@bp.post("/v1/post/new")
+@bp.input(ReadingSchema)
+@bp.output(DefaultResponseSchema)
+@bp.doc(summary="Add a new reading for a given sensor")
+def addReading(json_data: dict):
     """Upload temperature data for a given time from listener.py. Not publicly accessible."""
     print(json_data)
     db = get_db()
@@ -76,15 +82,13 @@ def setTemperature(json_data: dict):
 
     try:
         db.execute(
-            "INSERT INTO temperatures (time, fridge, sensor, temp) VALUES (?, ?, ?, ?)",
+            "INSERT INTO temperatures (timestamp, fridge, sensor, temp) VALUES (?, ?, ?, ?)",
             (timestamp, fridge, sensor, temp),
         )
         db.commit()
     except db.IntegrityError:
-        error = "Duplicate entry"
-    else:
-        error = "success"
-    return {"success": True, "error": error}
+        return abort(500, "Duplicate data entry")
+    return {"success": True}
 
 
 

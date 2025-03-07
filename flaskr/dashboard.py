@@ -7,7 +7,11 @@ bp = Blueprint("dashboard", __name__, url_prefix="/dashboard")
 @bp.route("/")
 def dashboard():
     fridge = request.args.get('fridge', type=str)
-    pretty_fridge = "" if fridge is None else fridge.title()
-    return render_template("dashboard.html", fridge=fridge, pretty_fridge=pretty_fridge)
+    if fridge is None:
+        # Render all the fridges at once
+        return render_template("combined_dashboard.html", title="Fridge Status")
+    else:
+        # Render just one fridge
+        return render_template("dashboard.html", fridge=fridge, title=f"{fridge.title()} Fridge Status")
 
 

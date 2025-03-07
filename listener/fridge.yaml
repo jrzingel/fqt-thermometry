@@ -1,0 +1,23 @@
+# Configure the datafiles that the fridge outputs.
+# In general this shouldn't change between fridges
+
+# DATE will be replaced with the current date
+
+fridge: "test"
+
+temperatures:
+  T1:
+    sensor: "T1 50K"
+    log: "CH1 T DATE.log"
+  T2:
+    sensor: "T2 4K"
+    log: "CH2 T DATE.log"
+  T3:
+    sensor: "T3 Magnet"
+    log: "CH3 T DATE.log"
+  T5:
+    sensor: "T5 Still"
+    log: "CH5 T DATE.log"
+  T6:
+    sensor: "T6 Mixing chamber"
+    log: "CH6 T DATE.log"

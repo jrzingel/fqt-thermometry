@@ -47,6 +47,11 @@ class DefaultResponseSchema(Schema):
     success = Boolean(required=True)
 
 
+@bp.get("/v1/ping")
+@bp.doc(summary="Ping that the API server is active")
+def ping():
+    return {"response": "pong"}
+
 
 @bp.post("/v1/latest")
 @bp.input(LatestReadingSchema)
@@ -108,6 +113,8 @@ def addReading(json_data: dict):
     sensor = json_data["sensor"]
     temp = json_data["temp"]
     timestamp = json_data["timestamp"]
+
+    # TODO: Add validation that this is a known fridge and sensor
 
     try:
         db.execute(

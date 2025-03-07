@@ -22,5 +22,5 @@ CREATE TABLE temperatures (
     temp REAL NOT NULL,
     FOREIGN KEY (fridge) REFERENCES fridges (name),
     FOREIGN KEY (sensor) REFERENCES sensors (name)
-
 );
+CREATE UNIQUE INDEX no_duplicate_readings ON temperatures (timestamp, fridge, sensor, temp);

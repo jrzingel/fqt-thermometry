@@ -2,12 +2,40 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title><Morello Lab Thermometry</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><FQT Lab Thermometry</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-3.0.0.min.js" charset="utf-8"></script>
 </head>
-<body>
+<body class="bg-gray-100">
+    <div class="flex flex-col h-screen">
 
-{% block content %}{% endblock %}
+    <!-- Banner -->
+    <header class="bg-blue-600 text-white text-center text-xl p-4 shadow-md">
+            Website Banner
+    </header>
 
+    <div class="flex flex-1 overflow-hidden">
+            <!-- Sidebar -->
+            <nav class="w-1/5 bg-gray-800 text-white p-4 space-y-4 overflow-y-auto">
+                <ul class="space-y-2">
+                    <li><a href="#" class="block p-2 hover:bg-gray-700 rounded">Page 1</a></li>
+                    <li><a href="#" class="block p-2 hover:bg-gray-700 rounded">Page 2</a></li>
+                    <li><a href="#" class="block p-2 hover:bg-gray-700 rounded">Page 3</a></li>
+                    <li><a href="#" class="block p-2 hover:bg-gray-700 rounded">Page 4</a></li>
+                </ul>
+            </nav>
+
+            <!-- Main Content -->
+            <main class="flex-1 p-6 overflow-y-auto">
+                <h1 class="text-2xl font-bold mb-4">Main Content Area</h1>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    {% block content %}{% endblock %}
+                </div>
+            </main>
+        </div>
+
+    </div>
 </body>
 </html>

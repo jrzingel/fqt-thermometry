@@ -3,5 +3,72 @@
 {% block content %}
 
 <p>The graphs will go here</p>
+<div class="mb-4 grid grid-cols-3 gap-4">
+    <div>
+        <label for="startTime" class="block text-sm font-medium text-gray-700">Start Time:</label>
+        <input type="datetime-local" id="startTime" class="mt-1 block w-full p-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+    </div>
+    <div>
+        <label for="endTime" class="block text-sm font-medium text-gray-700">End Time:</label>
+        <input type="datetime-local" id="endTime" class="mt-1 block w-full p-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+    </div>
+    <div class="flex items-end">
+        <button id="applyRange" class="bg-blue-600 text-white px-4 py-2 rounded-md shadow hover:bg-blue-700">Apply</button>
+    </div>
+</div>
+<div id="graph" style="width:100%;height:400px;"></div>
+
+
+<script>
+// On the page load, get the last 6 hours of data
+ function setDefaultTimestamps() {
+    const now = new Date();
+    const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+
+    document.getElementById("endTime").value = now.toISOString().slice(0, 16);
+    document.getElementById("startTime").value = sixHoursAgo.toISOString().slice(0, 16);
+}
+
+
+
+async function fetchGraphData() {
+    const startTime = document.getElementById("startTime").value;
+    const endTime = document.getElementById("endTime").value;
+    const requestData = {
+        earliest_timestamp: startTime,
+        latest_timestamp: endTime,
+        fridge: "test",
+        sensor: "T1 50K"
+    };
+
+    try {
+        const response = await fetch('http://127.0.0.1:5000/api/v1/range', {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(requestData)
+        });
+        const data = await response.json();
+        console.log(data);
+        const trace = {
+            x: data.timestamps,
+            y: data.readings,
+            type: 'scatter',
+            mode: 'lines',
+            line: { color: 'blue' }
+        };
+        Plotly.newPlot('graph', [trace]);
+    } catch (error) {
+        console.error('Error fetching graph data:', error);
+    }
+}
+
+document.getElementById("applyRange").addEventListener("click", fetchGraphData);
+
+setDefaultTimestamps();
+fetchGraphData();
+//setInterval(fetchGraphData, 60000);
+</script>
 
 {% endblock %}

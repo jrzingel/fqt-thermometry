@@ -47,6 +47,13 @@ class DefaultResponseSchema(Schema):
     success = Boolean(required=True)
 
 
+class RangedResponseSchema(Schema):
+    timestamps = List(DateTime())
+    readings = List(Float())
+    fridge = String(required=True)
+    sensor = String(required=True)
+
+
 @bp.get("/v1/ping")
 @bp.doc(summary="Ping that the API server is active")
 def ping():
@@ -71,10 +78,11 @@ def getLatestReading(json_data: dict):
     del temp_row["id"]  # Internal use only. Don't expose to users
     return temp_row
 
-
+# TODO: Return as {timestamps, readings} to make it easier to work with in javascript
+# TODO: Add /v1/range/hour to return the latest of the past hour
 @bp.post("/v1/range")
 @bp.input(RangedReadingSchema)
-#@bp.output(ManyReadingSchema)
+@bp.output(RangedResponseSchema)
 @bp.doc(summary="Get all readings for a sensor between two timestamps")
 def getRangeOfReadings(json_data: dict):
     """Get a range of readings between two timestamps for a given sensor."""
@@ -92,12 +100,19 @@ def getRangeOfReadings(json_data: dict):
     if reading_rows is None:
         return abort(404, "No readings found")
 
-    rows = []
+    timestamps = []
+    readings = []
+
     for row in reading_rows:
         r = dict(row)
-        del r["id"]
-        rows.append(r)
-    return {"readings": rows}
+        timestamps.append(r["timestamp"])
+        readings.append(r["temp"])
+    return {
+        "readings": readings,
+        "timestamps": timestamps,
+        "fridge": json_data["fridge"],
+        "sensor": json_data["sensor"],
+    }
 
 
 
@@ -107,7 +122,7 @@ def getRangeOfReadings(json_data: dict):
 @bp.doc(summary="Add a new reading for a given sensor")
 def addReading(json_data: dict):
     """Upload temperature data for a given time from listener.py. Not publicly accessible."""
-    print(json_data)
+    #print(json_data)
     db = get_db()
     fridge = json_data["fridge"]
     sensor = json_data["sensor"]

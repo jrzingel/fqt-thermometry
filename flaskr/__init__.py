@@ -10,7 +10,7 @@ from . import dashboard
 
 def create_app():
     """Application factory for creating the flask app"""
-    app = APIFlask(__name__, instance_relative_config=True, title="Morello Lab Thermometry", version='1.0')
+    app = APIFlask(__name__, instance_relative_config=True, title="FQT Lab Thermometry", version='1.0')
 
     app.config.from_mapping(
         SECRET_KEY="dev",

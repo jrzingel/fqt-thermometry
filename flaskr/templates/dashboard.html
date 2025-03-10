@@ -16,17 +16,17 @@
         <button id="applyRange" class="bg-blue-600 text-white px-4 py-2 rounded-md shadow hover:bg-blue-700">Apply</button>
     </div>
 </div>
-<div id="graph" style="width:100%;height:400px;"></div>
+<div id="graph" style="width:100%;height:600px;"></div>
 
 
 <script>
 // On the page load, get the last 6 hours of data
  function setDefaultTimestamps() {
     const now = new Date();
-    const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
     document.getElementById("endTime").value = now.toISOString().slice(0, 16);
-    document.getElementById("startTime").value = sixHoursAgo.toISOString().slice(0, 16);
+    document.getElementById("startTime").value = sevenDaysAgo.toISOString().slice(0, 16);
 }
 
 
@@ -51,6 +51,7 @@ async function fetchGraphData() {
         });
         const data = await response.json();
         console.log(data);
+
         const trace = {
             x: data.timestamps,
             y: data.readings,
@@ -59,11 +60,47 @@ async function fetchGraphData() {
             line: { color: 'blue' }
         };
 
+        var selectorOptions = {
+            buttons: [{
+                step: 'minute',
+                stepmode: 'backward',
+                count: 30,
+                label: '30m'
+            }, {
+                step: 'hour',
+                stepmode: 'backward',
+                count: 1,
+                label: '1h'
+            }, {
+                step: 'hour',
+                stepmode: 'backward',
+                count: 6,
+                label: '6h'
+            },{
+                step: 'day',
+                stepmode: 'backward',
+                count: 3,
+                label: '3d'
+            },{
+                step: 'day',
+                stepmode: 'backward',
+                count: 7,
+                label: '7d'
+            }],
+        };
+
         const layout = {
             title: {
                 text: "Fridge temp"
             },
-            font: {size: 18}
+            font: {size: 18},
+            xaxis: {
+                rangeselector: selectorOptions,
+                rangeslider: {}
+            },
+            yaxis: {
+                fixedrange: true
+            }
         };
 
         const config = {

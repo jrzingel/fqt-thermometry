@@ -10,6 +10,9 @@ from flask import g, request
 from apiflask import APIBlueprint, Schema, abort
 from apiflask.fields import Integer, String, Float, DateTime, Boolean, List
 from apiflask.validators import OneOf
+import random
+from datetime import datetime
+
 
 from flaskr.db import get_db
 
@@ -115,6 +118,23 @@ def getRangeOfReadings(json_data: dict):
     }
 
 
+@bp.post("/v1/random_range")
+@bp.input(RangedReadingSchema)
+@bp.output(RangedResponseSchema)
+def getRandom(json_data: dict):
+    """Return random readings"""
+    n = 100
+    start, end = int(json_data["earliest_timestamp"].timestamp()), int(json_data["latest_timestamp"].timestamp())
+    timestamps = [random.randrange(start, end) for _ in range(n)]
+    timestamps.sort()
+    timestamps = [datetime.fromtimestamp(i) for i in timestamps]
+    return {
+        "readings": [random.random() for _ in range(n)],
+        "timestamps": timestamps,
+        "fridge": json_data["fridge"],
+        "sensor": json_data["sensor"],
+    }
+
 
 @bp.post("/v1/new")
 @bp.input(ReadingSchema)
@@ -140,7 +160,4 @@ def addReading(json_data: dict):
     except db.IntegrityError:
         return abort(500, "Duplicate data entry")
     return {"success": True}
-
-
-
 

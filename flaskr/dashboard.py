@@ -4,6 +4,8 @@ from flask import Blueprint, render_template, request
 
 bp = Blueprint("dashboard", __name__, url_prefix="/dashboard")
 
+# TODO: Load the database and read the available sensors. Plot the sensors stored
+
 @bp.route("/")
 def dashboard():
     fridge = request.args.get('fridge', type=str)

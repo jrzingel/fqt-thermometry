@@ -2,29 +2,25 @@
 
 {% block content %}
 
-<p>The graphs will go here</p>
+
 <div class="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
     <div>
         <label for="startTime" class="block text-sm font-medium text-gray-700">Start Time:</label>
         <input type="datetime-local" id="startTime" class="mt-1 block w-full p-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
     </div>
-    <div>
-        <label for="endTime" class="block text-sm font-medium text-gray-700">End Time:</label>
-        <input type="datetime-local" id="endTime" class="mt-1 block w-full p-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-    </div>
-    <div class="flex items-end">
-        <button id="applyRange" class="bg-blue-600 text-white px-4 py-2 rounded-md shadow hover:bg-blue-700">Apply</button>
-    </div>
 </div>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div class=" rounded-lg p-4">
-        <p>Temp graph</p>
-        <div id="graph1" style="width:100%;height:600px;"></div>
-    </div>
-    <div class="bg-green-500 rounded-lg p-4">Div 2</div>
-    <div class="bg-blue-500 rounded-lg p-4">Div 3</div>
-    <div class="bg-yellow-500 rounded-lg p-4">Div 4</div>
-</div>
+
+<h2 id="status">Loading page</h2>
+
+<div id="graphs"></div>
+
+
+{#<div class="grid grid-cols-1 md:grid-cols-2 gap-4">#}
+{#    <div class="bg-red-500 rounded-lg p-4">Div 1</div>#}
+{#    <div class="bg-green-500 rounded-lg p-4">Div 2</div>#}
+{#    <div class="bg-blue-500 rounded-lg p-4">Div 3</div>#}
+{#    <div class="bg-yellow-500 rounded-lg p-4">Div 4</div>#}
+{#</div>#}
 
 <script>
 // On the page load, get the last 7 days of data
@@ -32,13 +28,110 @@ function setDefaultTimestamps() {
     const now = new Date();
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    document.getElementById("endTime").value = now.toISOString().slice(0, 16);
     document.getElementById("startTime").value = sevenDaysAgo.toISOString().slice(0, 16);
 }
 
-async function fetchGraphData() {
+
+function prepData(packed) {
+    console.time('prep');
+    // epoch,t1,t2,t3,t5,t6
+
+    let data = packed;
+
+    console.timeEnd("prep");
+    return data;
+}
+
+
+function makeChart(data) {
+    console.time("chart");
+
+    let mooSync = uPlot.sync("moo");
+
+    // Sync cursors between plots
+    mooSync.sub(uplot1);
+    mooSync.sub(uplot2);
+    mooSync.sub(uplot3);
+
+    const matchSyncKeys = (own, ext) => own == ext;
+
+    const cursorOpts = {
+        lock: true,
+        focus: {
+            prox: 16
+        },
+        sync: {
+            key: mooSync.key,
+            setSeries: true,
+            match: [matchSyncKeys, matchSyncKeys]
+        }
+    }
+
+    const opts1 = {
+        title: "Temperatures",
+        width: 1920,
+        height: 400,
+        focus: {
+            alpha: 0.3,
+        },
+        cursor: cursorOpts,
+        series: [
+            {},
+            {
+                label: "T1",
+                stroke: "blue",
+                spanGaps: true,
+                scale: "K",
+                value: (u, v) => v == null ? '' : v.toFixed(3) + "K"
+            },
+            {
+                label: "T2",
+                stroke: "red",
+                spanGaps: true,
+                scale: "K",
+                value: (u, v) => v == null ? '' : v.toFixed(3) + "K"
+            },
+            {
+                label: "T3",
+                stroke: "green",
+                spanGaps: true,
+                scale: "K",
+                value: (u, v) => v == null ? '' : v.toFixed(3) + "K"
+            },
+            {
+                label: "T5",
+                stroke: "purple",
+                spanGaps: true,
+                scale: "K",
+                value: (u, v) => v == null ? '' : v.toFixed(3) + "K"
+            },
+            {
+                label: "T6",
+                stroke: "orange",
+                spanGaps: true,
+                scale: "K",
+                value: (u, v) => v == null ? '' : v.toFixed(3) + "K"
+            }
+        ],
+        axes: [
+            {},
+            {
+                scale: "K",
+                values: (self, ticks) => ticks.map(v => v.toFixed(3) + "K"),
+                label: "Temperature (K)"
+            }
+        ]
+    }
+
+    let uplot1 = new uPlot(opts1, data[0], document.getElementById("graphs"));
+
+    console.timeEnd("chart");
+}
+
+
+async function fetchData() {
     const startTime = document.getElementById("startTime").value;
-    const endTime = document.getElementById("endTime").value;
+    const endTime = new Date().toISOString().slice(0, 16);
     const requestData = {
         earliest_timestamp: startTime,
         latest_timestamp: endTime,
@@ -46,64 +139,40 @@ async function fetchGraphData() {
         sensor: "T1 50K"
     };
 
-    try {
-        const response = await fetch('http://127.0.0.1:5000/api/v1/random_range', {
-            method: 'POST',
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(requestData)
-        });
-        const json_data = await response.json();
-        console.log(json_data);
+    const response = await fetch('http://127.0.0.1:5000/api/v1/random_range', {
+        method: 'POST',
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(requestData)
+    });
+    const json_data = await response.json();
+    console.log(json_data);
 
-        // Convert to unix timestamp
+    // Convert to unix timestamp
 
-        let data = [
-            json_data.timestamps.map(t => Math.floor(new Date(t).getTime()) / 1000),
-            json_data.readings
-        ];
-        console.log(data);
+    let data = [
+        json_data.timestamps.map(t => Math.floor(new Date(t).getTime()) / 1000),
+        json_data.readings
+    ];
 
-        let opts = {
-            width: 600,
-            height: 400,
-            title: "Fridge temp",
-            id: "graph1",
-//            scales: {
-//            x: {
-//                    time: true
-//                },
-//                y: {
-//                    range: [0, 100]
-//                }
-//            },
-            series: [
-                {},
-                {
-                    show: true,
-                    label: "Temp",
-                    value: (u, v) => v,
-                    stroke: "blue"
-                }
-            ]
-        };
-
-        let uplot = new uPlot(opts, data, document.getElementById("graph1"));
-
-
-
-
-    } catch (error) {
-        console.error('Error fetching graph data:', error);
-    }
+    return data;
 }
 
-document.getElementById("applyRange").addEventListener("click", fetchGraphData);
+function go() {
+    let status = document.getElementById("status");  // Update this to let the user know the progress
+    status.textContent = "Fetching data..."
+    fetchData().then(r => r.json()).then(packed => {
+        status.textContent = "Data fetched, rendering..."
+        let data = prepData(packed);
+        setTimeout(() => makeChart(data), 0);
+    });
+}
 
-setDefaultTimestamps();
-fetchGraphData();
-//setInterval(fetchGraphData, 60000);
+
+document.getElementById("startTime").addEventListener("change", go);
+go();
+
 </script>
 
 {% endblock %}

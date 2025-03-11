@@ -3,7 +3,7 @@
 {% block content %}
 
 <p>The graphs will go here</p>
-<div class="mb-4 grid grid-cols-3 gap-4">
+<div class="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
     <div>
         <label for="startTime" class="block text-sm font-medium text-gray-700">Start Time:</label>
         <input type="datetime-local" id="startTime" class="mt-1 block w-full p-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
@@ -16,20 +16,25 @@
         <button id="applyRange" class="bg-blue-600 text-white px-4 py-2 rounded-md shadow hover:bg-blue-700">Apply</button>
     </div>
 </div>
-<div id="graph" style="width:100%;height:600px;"></div>
-
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="bg-red-500 rounded-lg p-4">
+        <p>Temp graph</p>
+        <div id="graph1" style="width:100%;height:600px;"></div>
+    </div>
+    <div class="bg-green-500 rounded-lg p-4">Div 2</div>
+    <div class="bg-blue-500 rounded-lg p-4">Div 3</div>
+    <div class="bg-yellow-500 rounded-lg p-4">Div 4</div>
+</div>
 
 <script>
-// On the page load, get the last 6 hours of data
- function setDefaultTimestamps() {
+// On the page load, get the last 7 days of data
+function setDefaultTimestamps() {
     const now = new Date();
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
     document.getElementById("endTime").value = now.toISOString().slice(0, 16);
     document.getElementById("startTime").value = sevenDaysAgo.toISOString().slice(0, 16);
 }
-
-
 
 async function fetchGraphData() {
     const startTime = document.getElementById("startTime").value;
@@ -107,7 +112,9 @@ async function fetchGraphData() {
             responsive: true,
         }
 
-        Plotly.newPlot('graph', [trace], layout, config);
+        Plotly.newPlot('graph1', [trace], layout, config);
+        Plotly.newPlot('graph2', [trace], layout, config);
+        // Add more Plotly.newPlot calls for additional graphs as needed
     } catch (error) {
         console.error('Error fetching graph data:', error);
     }

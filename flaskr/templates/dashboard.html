@@ -17,7 +17,7 @@
     </div>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div class="bg-red-500 rounded-lg p-4">
+    <div class=" rounded-lg p-4">
         <p>Temp graph</p>
         <div id="graph1" style="width:100%;height:600px;"></div>
     </div>
@@ -54,67 +54,46 @@ async function fetchGraphData() {
             },
             body: JSON.stringify(requestData)
         });
-        const data = await response.json();
+        const json_data = await response.json();
+        console.log(json_data);
+
+        // Convert to unix timestamp
+
+        let data = [
+            json_data.timestamps.map(t => Math.floor(new Date(t).getTime()) / 1000),
+            json_data.readings
+        ];
         console.log(data);
 
-        const trace = {
-            x: data.timestamps,
-            y: data.readings,
-            type: 'scatter',
-            mode: 'lines',
-            line: { color: 'blue' }
+        let opts = {
+            width: 600,
+            height: 400,
+            title: "Fridge temp",
+            id: "graph1",
+//            scales: {
+//            x: {
+//                    time: true
+//                },
+//                y: {
+//                    range: [0, 100]
+//                }
+//            },
+            series: [
+                {},
+                {
+                    show: true,
+                    label: "Temp",
+                    value: (u, v) => v,
+                    stroke: "blue"
+                }
+            ]
         };
 
-        var selectorOptions = {
-            buttons: [{
-                step: 'minute',
-                stepmode: 'backward',
-                count: 30,
-                label: '30m'
-            }, {
-                step: 'hour',
-                stepmode: 'backward',
-                count: 1,
-                label: '1h'
-            }, {
-                step: 'hour',
-                stepmode: 'backward',
-                count: 6,
-                label: '6h'
-            },{
-                step: 'day',
-                stepmode: 'backward',
-                count: 3,
-                label: '3d'
-            },{
-                step: 'day',
-                stepmode: 'backward',
-                count: 7,
-                label: '7d'
-            }],
-        };
+        let uplot = new uPlot(opts, data, document.getElementById("graph1"));
 
-        const layout = {
-            title: {
-                text: "Fridge temp"
-            },
-            font: {size: 18},
-            xaxis: {
-                rangeselector: selectorOptions,
-                rangeslider: {}
-            },
-            yaxis: {
-                fixedrange: true
-            }
-        };
 
-        const config = {
-            responsive: true,
-        }
 
-        Plotly.newPlot('graph1', [trace], layout, config);
-        Plotly.newPlot('graph2', [trace], layout, config);
-        // Add more Plotly.newPlot calls for additional graphs as needed
+
     } catch (error) {
         console.error('Error fetching graph data:', error);
     }

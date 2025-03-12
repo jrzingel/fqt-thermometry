@@ -42,16 +42,17 @@ def create_dummy_data():
         'INSERT INTO fridges (name) VALUES (?)', [("fridge1",), ("fridge2",)]
     )
     db.executemany(
-        'INSERT INTO sensors (fridge, name) VALUES (?, ?) ', [("fridge1", "sensor1"), ("fridge2", "sensor2")]
+        'INSERT INTO sensors (fridge, name) VALUES (?, ?) ', [("fridge1", "s1"), ("fridge1", "s2"), ("fridge1", "s3")]
     )
-    n = 100
-    random_values = [random.random() for _ in range(n)]
-    random_timestamps = [datetime.now().replace(hour=random.randint(8, 14), minute=random.randint(0, 59), second=random.randint(0, 59)) for _ in range(n)]
-    random_timestamps.sort()
-    tuples = [(t, "fridge1", "sensor1", te) for t, te in zip(random_timestamps, random_values)]
-    db.executemany(
-        'INSERT INTO temperatures (timestamp, fridge, sensor, temp) VALUES (?, ?, ?, ?)', tuples
-    )
+    for sensor in ["s1", "s2", "s3"]:
+        n = 100
+        random_values = [random.random() for _ in range(n)]
+        random_timestamps = [datetime.now().replace(hour=random.randint(8, 14), minute=random.randint(0, 59), second=random.randint(0, 59)) for _ in range(n)]
+        random_timestamps.sort()
+        tuples = [(t, "fridge1", sensor, te) for t, te in zip(random_timestamps, random_values)]
+        db.executemany(
+            'INSERT INTO temperatures (timestamp, fridge, sensor, temp) VALUES (?, ?, ?, ?)', tuples
+        )
     db.commit()
 
 

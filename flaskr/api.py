@@ -8,11 +8,14 @@ import sqlite3
 
 from flask import g, request
 from apiflask import APIBlueprint, Schema, abort
-from apiflask.fields import Integer, String, Float, DateTime, Boolean, List
+from apiflask.fields import Integer, String, Float, DateTime, Boolean, List, Dict
 from apiflask.validators import OneOf
 import random
 from datetime import datetime
 import math
+import pandas as pd
+import numpy as np
+from functools import reduce
 
 
 from flaskr.db import get_db
@@ -39,8 +42,10 @@ class LatestReadingSchema(Schema):
     #type = String(required=True, validate=OneOf(["temperature", "pressure"]))
 
 
-class RangedReadingSchema(LatestReadingSchema):
+class RangedReadingSchema(Schema):
     """Schema for specifying a range of readings to return"""
+    fridge = String(required=True)
+    sensors = List(String())
     earliest_timestamp = DateTime(required=False)  # range of times. Ignored if latest flag is set
     latest_timestamp = DateTime(required=False)
 
@@ -52,10 +57,9 @@ class DefaultResponseSchema(Schema):
 
 
 class RangedResponseSchema(Schema):
-    timestamps = List(DateTime())
-    readings = List(Float())
+    timestamps = List(Integer(), required=True)
     fridge = String(required=True)
-    sensor = String(required=True)
+    readings = Dict(keys=String(), values=List(Float()), required=True)
 
 
 @bp.get("/v1/ping")
@@ -72,7 +76,7 @@ def getLatestReading(json_data: dict):
     """Get the latest reading of the given sensor."""
     db = get_db()
     temp_row = db.execute(
-        'SELECT * FROM temperatures  WHERE fridge = ? AND sensor = ? ORDER BY timestamp DESC', (json_data["fridge"], json_data["sensor"])
+        'SELECT * FROM temperatures WHERE fridge = ? AND sensor = ? ORDER BY timestamp DESC', (json_data["fridge"], json_data["sensor"])
     ).fetchone()
 
     if temp_row is None:
@@ -96,26 +100,49 @@ def getRangeOfReadings(json_data: dict):
     if json_data["earliest_timestamp"] > json_data["latest_timestamp"]:
         return abort(400, "Earliest timestamp must be before latest timestamp")
 
-    reading_rows = db.execute(
-        'SELECT * from temperatures WHERE fridge = ? AND sensor = ? AND timestamp >= ? AND timestamp <= ? ORDER BY timestamp',
-        (json_data["fridge"], json_data["sensor"], json_data["earliest_timestamp"], json_data["latest_timestamp"])
-    ).fetchall()
+    raw_data = {}
 
-    if reading_rows is None:
-        return abort(404, "No readings found")
+    for sensor in json_data["sensors"]:
+        reading_rows = db.execute(
+            'SELECT * from temperatures WHERE fridge = ? AND sensor = ? AND timestamp >= ? AND timestamp <= ? ORDER BY timestamp',
+            (json_data["fridge"], sensor, json_data["earliest_timestamp"], json_data["latest_timestamp"])
+        ).fetchall()
 
-    timestamps = []
-    readings = []
+        if reading_rows is None:
+            reading_rows = []
 
-    for row in reading_rows:
-        r = dict(row)
-        timestamps.append(r["timestamp"])
-        readings.append(r["temp"])
+        raw_data[sensor] = reading_rows
+
+    # All results should use a common set of timestamps
+    # -> Merge with Pandas
+    # {timestamps: [...], readings: {sensor_name: [...], ...}
+
+    df_list = []
+    for sensor, reading_rows in raw_data.items():
+        timestamps = []
+        readings = []
+
+        for row in reading_rows:
+            r = dict(row)
+            timestamps.append(r["timestamp"])
+            readings.append(r["temp"])
+
+        df = pd.DataFrame({
+            'timestamp': timestamps, sensor: readings
+        })
+        df.set_index('timestamp', inplace=True)
+        df_list.append(df)
+
+
+    result = reduce(lambda left, right: pd.merge(left, right, left_on='timestamp', right_on='timestamp', how='outer'), df_list)
+
+    # Convert timestamps from Nanoseconds since the epoch to standard Unix epoch (second)
+    result.index = result.index.values.astype(np.int64) // 10**9
+
     return {
-        "readings": readings,
-        "timestamps": timestamps,
         "fridge": json_data["fridge"],
-        "sensor": json_data["sensor"],
+        "timestamps": result.index.values.tolist(),
+        "readings": result.to_dict('list')
     }
 
 
@@ -130,7 +157,7 @@ def getRandom(json_data: dict):
     timestamps.sort()
     timestamps = [datetime.fromtimestamp(i) for i in timestamps]
     return {
-        "readings": [random.random() for _ in range(n)],
+        "readings": [random.random()] * n,
         "timestamps": timestamps,
         "fridge": json_data["fridge"],
         "sensor": json_data["sensor"],

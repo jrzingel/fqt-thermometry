@@ -32,7 +32,7 @@ function setDefaultTimestamps() {
 }
 
 
-function prepData(packed) {
+function getData(packed) {
     console.time('prep');
     // epoch,t1,t2,t3,t5,t6
 
@@ -129,14 +129,14 @@ function makeChart(data) {
 }
 
 
-async function fetchData() {
+async function fetchFromAPI(fridge, sensor) {
     const startTime = document.getElementById("startTime").value;
     const endTime = new Date().toISOString().slice(0, 16);
     const requestData = {
         earliest_timestamp: startTime,
         latest_timestamp: endTime,
-        fridge: "test",
-        sensor: "T1 50K"
+        fridge: fridge,
+        sensor: sensor
     };
 
     const response = await fetch('http://127.0.0.1:5000/api/v1/random_range', {
@@ -162,13 +162,17 @@ async function fetchData() {
 function go() {
     let status = document.getElementById("status");  // Update this to let the user know the progress
     status.textContent = "Fetching data..."
-    fetchData().then(r => r.json()).then(packed => {
+    fetchData().then(packed => {
         status.textContent = "Data fetched, rendering..."
         let data = prepData(packed);
         setTimeout(() => makeChart(data), 0);
     });
 }
 
+// Specify graphs to plot.
+// Will create one large plot for everything, and then an individual plot for each sensor.
+const fridge = "test";
+const sensors = ["T1 50K", "T2 4K", "T3 Magnet", "T5 Still", "T6 MXC"];
 
 document.getElementById("startTime").addEventListener("change", go);
 go();

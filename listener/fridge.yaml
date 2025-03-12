@@ -19,5 +19,5 @@ temperatures:
     sensor: "T5 Still"
     log: "CH5 T DATE.log"
   T6:
-    sensor: "T6 Mixing chamber"
+    sensor: "T6 MXC"
     log: "CH6 T DATE.log"

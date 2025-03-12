@@ -139,6 +139,9 @@ def getRangeOfReadings(json_data: dict):
     # Convert timestamps from Nanoseconds since the epoch to standard Unix epoch (second)
     result.index = result.index.values.astype(np.int64) // 10**9
 
+    # Convert NaN to null
+    result = result.replace({np.nan: None})
+
     return {
         "fridge": json_data["fridge"],
         "timestamps": result.index.values.tolist(),

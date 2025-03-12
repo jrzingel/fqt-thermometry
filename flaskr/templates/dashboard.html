@@ -31,8 +31,8 @@ function setDefaultTimestamps() {
     document.getElementById("startTime").value = sevenDaysAgo.toISOString().slice(0, 16);
 }
 
-function getSize() {
-    let w = document.getElementById("workspace").offsetWidth;  // Scale everything based on this
+function getSize(divisor=1.0) {
+    let w = document.getElementById("workspace").offsetWidth / divisor;  // Scale everything based on this
     return {
         width: w * 0.97,
         height: w * 0.3
@@ -82,7 +82,7 @@ function makeChart(data) {
         }
     }
 
-    const opts1 = {
+    const opts_main = {
         title: "Temperatures",
         ...getSize(),
         focus: {
@@ -93,14 +93,14 @@ function makeChart(data) {
             {},
             {
                 label: "T1",
-                stroke: "blue",
+                stroke: COLOURS[0],
                 spanGaps: true,
                 scale: "K",
                 value: (u, v) => v == null ? '' : v.toFixed(3) + "K"
             },
             {
                 label: "T2",
-                stroke: "red",
+                stroke: COLOURS[1],
                 spanGaps: true,
                 scale: "K",
                 value: (u, v) => v == null ? '' : v.toFixed(3) + "K"
@@ -116,7 +116,41 @@ function makeChart(data) {
         ]
     }
 
-    let uplot1 = new uPlot(opts1, data, document.getElementById("graphs"));
+    let uplot1 = new uPlot(opts_main, data, document.getElementById("graphs"));
+
+    // For each sensor, create their own subplot
+    for (let i = 1; i < data.length; i++) {
+        // Plot [data[0] (timestamps), data[i] (sensor data)]
+        let opts = {
+            title: "Sensor " + SENSORS[i-1],
+            ...getSize(2.1),
+            focus: {
+                alpha: 0.3,
+            },
+            cursor: cursorOpts,
+            series: [
+                {},
+                {
+                    label: SENSORS[i-1],
+                    stroke: COLOURS[i-1],
+                    spanGaps: true,
+                    value: (u, v) => v == null ? '' : v.toFixed(3) + "K",
+                    scale: "K"
+                }
+            ],
+            axes: [
+                {},
+                {
+                    scale: "K",
+                    values: (self, ticks) => ticks.map(v => v.toFixed(3) + "K"),
+                    label: "Temperature (K)"
+                }
+            ]
+        }
+
+        let uplot = new uPlot(opts, [data[0], data[i]], document.getElementById("graphs"));
+    }
+
 
     // Dynamically update the data when required
     document.getElementById("startTime").addEventListener("change", function() {
@@ -189,6 +223,7 @@ function go() {
 // Will create one large plot for everything, and then an individual plot for each sensor.
 const FRIDGE = "fridge1";
 const SENSORS = ["s1", "s2"] //["T1 50K", "T2 4K", "T3 Magnet", "T5 Still", "T6 MXC"];
+const COLOURS = ["blue", "red", "green", "purple", "orange"];
 
 // TODO: Make this use uplot1.setData(data); to update the data
 

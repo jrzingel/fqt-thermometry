@@ -1,8 +1,9 @@
 # Methods for controlling the SQLite DB
 
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 import click
+import numpy as np
 
 from flask import current_app, g
 
@@ -46,8 +47,15 @@ def create_dummy_data():
     )
     for sensor in ["s1", "s2", "s3"]:
         n = 100
-        random_values = [random.random() for _ in range(n)]
-        random_timestamps = [datetime.now() - timedelta(hours=random.randint(0, 12), minutes=random.randint(0, 59), seconds=random.randint(0, 59)) for _ in range(n)]
+
+        # Gaussian noise data
+        random_values = []
+        i = 1.0
+        for _ in range(n):
+            i += random.gauss(0, 0.1)
+            i = max(0.0, i)
+            random_values.append(i)
+        random_timestamps = [datetime.now(UTC) - timedelta(hours=random.randint(0, 12), minutes=random.randint(0, 59), seconds=random.randint(0, 59)) for _ in range(n)]
         random_timestamps.sort()
         tuples = [(t, "fridge1", sensor, te) for t, te in zip(random_timestamps, random_values)]
         db.executemany(

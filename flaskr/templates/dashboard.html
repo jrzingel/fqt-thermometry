@@ -31,6 +31,14 @@ function setDefaultTimestamps() {
     document.getElementById("startTime").value = sevenDaysAgo.toISOString().slice(0, 16);
 }
 
+function getSize() {
+    let w = document.getElementById("workspace").offsetWidth;  // Scale everything based on this
+    return {
+        width: w * 0.97,
+        height: w * 0.3
+    }
+}
+
 
 function getData(packed) {
     console.time('prep');
@@ -76,8 +84,7 @@ function makeChart(data) {
 
     const opts1 = {
         title: "Temperatures",
-        width: 1920,
-        height: 400,
+        ...getSize(),
         focus: {
             alpha: 0.3,
         },
@@ -111,7 +118,7 @@ function makeChart(data) {
 
     let uplot1 = new uPlot(opts1, data, document.getElementById("graphs"));
 
-
+    // Dynamically update the data when required
     document.getElementById("startTime").addEventListener("change", function() {
         // Update the data if the start time changes
         let status = document.getElementById("status");  // Update this to let the user know the progress
@@ -126,8 +133,13 @@ function makeChart(data) {
             uplot1.setData(data);
             status.textContent = "Done!"
         });
-
     });
+
+    // Dynamically change the size of the plot when required
+    window.addEventListener("resize", function() {
+        uplot1.setSize(getSize());
+    });
+
     // Sync cursors between plots
     mooSync.sub(uplot1);
     {#mooSync.sub(uplot2);#}
@@ -183,6 +195,7 @@ const SENSORS = ["s1", "s2"] //["T1 50K", "T2 4K", "T3 Magnet", "T5 Still", "T6 
 
 setDefaultTimestamps();
 go();
+
 
 </script>
 

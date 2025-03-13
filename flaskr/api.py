@@ -86,7 +86,6 @@ def getLatestReading(json_data: dict):
     del temp_row["id"]  # Internal use only. Don't expose to users
     return temp_row
 
-# TODO: Return as {timestamps, readings} to make it easier to work with in javascript
 # TODO: Add /v1/range/hour to return the latest of the past hour
 @bp.post("/v1/range")
 @bp.input(RangedReadingSchema)

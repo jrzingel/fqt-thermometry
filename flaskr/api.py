@@ -46,7 +46,13 @@ class RangedReadingSchema(Schema):
     """Schema for specifying a range of readings to return"""
     fridge = String(required=True)
     sensors = List(String())
-    earliest_timestamp = DateTime(required=False)  # range of times. Ignored if latest flag is set
+    earliest_timestamp = DateTime(required=False)
+    latest_timestamp = DateTime(required=False)
+
+class MultipleFridgeReadingSchema(Schema):
+    """Schema for specifying a sensor from multiple fridges to return"""
+    query = Dict(keys=String(default="fridge"), values=String(default="sensor"), required=True)  # {fridge: sensor}
+    earliest_timestamp = DateTime(required=False)
     latest_timestamp = DateTime(required=False)
 
 
@@ -60,6 +66,11 @@ class RangedResponseSchema(Schema):
     timestamps = List(Integer(), required=True)
     fridge = String(required=True)
     readings = Dict(keys=String(), values=List(Float()), required=True)
+
+
+class MultipleFridgeResponseSchema(Schema):
+    timestamps = List(Integer(), required=True)
+    readings = Dict(keys=String(), values=List(Float()), required=True)  # {fridge.sensor: [readings]}
 
 
 @bp.get("/v1/ping")
@@ -86,13 +97,14 @@ def getLatestReading(json_data: dict):
     del temp_row["id"]  # Internal use only. Don't expose to users
     return temp_row
 
+
 # TODO: Add /v1/range/hour to return the latest of the past hour
 @bp.post("/v1/range")
 @bp.input(RangedReadingSchema)
 @bp.output(RangedResponseSchema)
-@bp.doc(summary="Get all readings for a sensor between two timestamps")
+@bp.doc(summary="Get all readings for some sensors between two timestamps on one fridge")
 def getRangeOfReadings(json_data: dict):
-    """Get a range of readings between two timestamps for a given sensor."""
+    """Get a range of readings between two timestamps for some given sensors."""
     db = get_db()
 
     # Sanity checks of the input
@@ -146,6 +158,67 @@ def getRangeOfReadings(json_data: dict):
         "timestamps": result.index.values.tolist(),
         "readings": result.to_dict('list')
     }
+
+
+@bp.post("/v1/fridges")
+@bp.input(MultipleFridgeReadingSchema)
+@bp.output(MultipleFridgeResponseSchema)
+@bp.doc(summary="Get all readings from multiple fridges for given sensors between two timestamps")
+def getMultipleFridgeReadings(json_data: dict):
+    """Get a range of readings between two timestamps for a given sensor on each fridge."""
+    db = get_db()
+
+    # Sanity checks of the input
+    if json_data["earliest_timestamp"] > json_data["latest_timestamp"]:
+        return abort(400, "Earliest timestamp must be before latest timestamp")
+
+
+    raw_data = {}
+    for fridge, sensor in json_data["query"].items():
+        reading_rows = db.execute(
+            'SELECT * from temperatures WHERE fridge = ? AND sensor = ? AND timestamp >= ? AND timestamp <= ? ORDER BY timestamp',
+            (fridge, sensor, json_data["earliest_timestamp"], json_data["latest_timestamp"])
+        ).fetchall()
+
+        if reading_rows is None:
+            reading_rows = []
+
+        raw_data[fridge + "." + sensor] = reading_rows
+
+    # All results should use a common set of timestamps
+    # -> Merge with Pandas
+    # {timestamps: [...], readings: {sensor_name: [...], ...}
+
+    df_list = []
+    for fridgesensor, reading_rows in raw_data.items():
+        timestamps = []
+        readings = []
+
+        for row in reading_rows:
+            r = dict(row)
+            timestamps.append(r["timestamp"])
+            readings.append(r["temp"])
+
+        df = pd.DataFrame({
+            'timestamp': timestamps, fridgesensor: readings
+        })
+        df.set_index('timestamp', inplace=True)
+        df_list.append(df)
+
+
+    result = reduce(lambda left, right: pd.merge(left, right, left_on='timestamp', right_on='timestamp', how='outer'), df_list)
+
+    # Convert timestamps from Nanoseconds since the epoch to standard Unix epoch (second)
+    result.index = result.index.values.astype(np.int64) // 10**9
+
+    # Convert NaN to null
+    result = result.replace({np.nan: None})
+
+    return {
+        "timestamps": result.index.values.tolist(),
+        "readings": result.to_dict('list')
+    }
+
 
 
 @bp.post("/v1/random_range")

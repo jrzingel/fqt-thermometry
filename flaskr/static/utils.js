@@ -29,6 +29,11 @@ function prepData(packed) {
     return data;
 }
 
+function now() {
+    // Get the current UNIX timestamp
+    return new Date().toISOString().slice(0, 16);
+}
+
 async function fetchFromAPI(fridge, sensors) {
     // Query the API for fridge sensor data
     const startTime = document.getElementById("startTime").value;
@@ -40,8 +45,6 @@ async function fetchFromAPI(fridge, sensors) {
         sensors: sensors
     };
 
-    console.log(requestData);
-
     const response = await fetch('http://127.0.0.1:5000/api/v1/range', {
         method: 'POST',
         headers: {
@@ -49,7 +52,25 @@ async function fetchFromAPI(fridge, sensors) {
         },
         body: JSON.stringify(requestData)
     });
-    const json_data = await response.json();
-    console.log(json_data);
-    return json_data;
+    return await response.json();
+}
+
+async function fetchFridgesFromAPI(query) {
+    // Query the API for fridge sensor data
+    const startTime = document.getElementById("startTime").value;
+    const endTime = new Date().toISOString().slice(0, 16);
+    const requestData = {
+        earliest_timestamp: startTime,
+        latest_timestamp: endTime,
+        query: query
+    };
+
+    const response = await fetch('http://127.0.0.1:5000/api/v1/fridges', {
+        method: 'POST',
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(requestData)
+    });
+    return await response.json();
 }

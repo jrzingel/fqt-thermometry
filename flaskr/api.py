@@ -51,7 +51,7 @@ class RangedReadingSchema(Schema):
 
 class MultipleFridgeReadingSchema(Schema):
     """Schema for specifying a sensor from multiple fridges to return"""
-    query = Dict(keys=String(default="fridge"), values=String(default="sensor"), required=True)  # {fridge: sensor}
+    query = List(List(String()), required=True)  # [[fridge, sensor], ...]
     earliest_timestamp = DateTime(required=False)
     latest_timestamp = DateTime(required=False)
 
@@ -168,13 +168,15 @@ def getMultipleFridgeReadings(json_data: dict):
     """Get a range of readings between two timestamps for a given sensor on each fridge."""
     db = get_db()
 
+    print(json_data)
+
     # Sanity checks of the input
     if json_data["earliest_timestamp"] > json_data["latest_timestamp"]:
         return abort(400, "Earliest timestamp must be before latest timestamp")
 
 
     raw_data = {}
-    for fridge, sensor in json_data["query"].items():
+    for fridge, sensor in json_data["query"]:
         reading_rows = db.execute(
             'SELECT * from temperatures WHERE fridge = ? AND sensor = ? AND timestamp >= ? AND timestamp <= ? ORDER BY timestamp',
             (fridge, sensor, json_data["earliest_timestamp"], json_data["latest_timestamp"])

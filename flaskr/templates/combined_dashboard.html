@@ -4,72 +4,110 @@
 
 <p>View all fridge temperatures and pressures at once</p>
 
-<div class="mb-4 grid grid-cols-3 gap-4">
+<div class="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
     <div>
         <label for="startTime" class="block text-sm font-medium text-gray-700">Start Time:</label>
         <input type="datetime-local" id="startTime" class="mt-1 block w-full p-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
     </div>
-    <div>
-        <label for="endTime" class="block text-sm font-medium text-gray-700">End Time:</label>
-        <input type="datetime-local" id="endTime" class="mt-1 block w-full p-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-    </div>
-    <div class="flex items-end">
-        <button id="applyRange" class="bg-blue-600 text-white px-4 py-2 rounded-md shadow hover:bg-blue-700">Apply</button>
-    </div>
 </div>
-<div id="graph" style="width:100%;height:400px;"></div>
+
+<h2 id="status">Loading page...</h2>
+
+<div id="graphs"></div>
+<script src="{{ url_for('static', filename='utils.js') }}"></script>
 
 
 <script>
-// On the page load, get the last 6 hours of data
- function setDefaultTimestamps() {
-    const now = new Date();
-    const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
 
-    document.getElementById("endTime").value = now.toISOString().slice(0, 16);
-    document.getElementById("startTime").value = sixHoursAgo.toISOString().slice(0, 16);
-}
+function makeChart(data) {
+    console.time("chart");
 
-
-
-async function fetchGraphData() {
-    const startTime = document.getElementById("startTime").value;
-    const endTime = document.getElementById("endTime").value;
-    const requestData = {
-        earliest_timestamp: startTime,
-        latest_timestamp: endTime,
-        fridge: "test",
-        sensor: "T1 50K"
-    };
-
-    try {
-        const response = await fetch('http://127.0.0.1:5000/api/v1/random_range', {
-            method: 'POST',
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(requestData)
-        });
-        const data = await response.json();
-        console.log(data);
-        const trace = {
-            x: data.timestamps,
-            y: data.readings,
-            type: 'scatter',
-            mode: 'lines',
-            line: { color: 'blue' }
-        };
-        Plotly.newPlot('graph', [trace]);
-    } catch (error) {
-        console.error('Error fetching graph data:', error);
+    const cursorOpts = {
+        lock: true,
+        focus: {
+            prox: 16
+        }
     }
+
+    const seriesOpts = [{}]
+    for (let i = 1; i < data.length; i++) {
+        seriesOpts.push({
+            label: FRIDGES[i - 1][0],
+            stroke: COLOURS[i - 1],
+            spanGaps: true,
+            scale: "K",
+            value: (u, v) => v == null ? '' : v.toFixed(3) + "K"
+        });
+    }
+
+    const opts_main = {
+        title: "Temperatures",
+        ...getSize(),
+        focus: {
+            alpha: 0.3,
+        },
+        cursor: cursorOpts,
+        series: seriesOpts,
+        axes: [
+            {},
+            {
+                scale: "K",
+                values: (self, ticks) => ticks.map(v => v.toFixed(3) + "K"),
+                label: "Temperature (K)"
+            }
+        ]
+    }
+
+    let uplot_main = new uPlot(opts_main, data, document.getElementById("graphs"));
+
+    // Dynamically update the data when required
+    document.getElementById("startTime").addEventListener("change", function() {
+        // Update the data if the start time changes
+        let status = document.getElementById("status");  // Update this to let the user know the progress
+        if (document.getElementById("startTime").value === "") {
+            return  // Don't do anything if the start time is empty
+        }
+
+        status.textContent = "Fetching data..."
+        fetchFromAPI(FRIDGE, SENSORS).then(packed => {
+            status.textContent = "Data fetched, rendering..."
+            let data = prepData(packed);
+            uplot_main.setData(data);
+            status.textContent = "Done!"
+        });
+    });
+
+    // Dynamically change the size of the plot when required
+    window.addEventListener("resize", function() {
+        uplot_main.setSize(getSize());
+    });
+
+    console.timeEnd("chart");
 }
 
-document.getElementById("applyRange").addEventListener("click", fetchGraphData);
+function go() {
+    let status = document.getElementById("status");  // Update this to let the user know the progress
+    status.textContent = "Fetching data..."
+    fetchFridgesFromAPI(FRIDGES).then(packed => {
+        status.textContent = "Data fetched, rendering..."
+        let data = prepData(packed);
+        makeChart(data);
+        status.textContent = "Done!"
+    });
+}
+
+
+// Specify graphs to plot.
+// Will create one large plot for all the MXC sensors of each fridge
+const FRIDGES = [
+    ["fridge1", "s1"],
+    ["fridge1", "s2"]
+];
+const COLOURS = ["blue", "red", "green", "purple", "orange"];
 
 setDefaultTimestamps();
-fetchGraphData();
-//setInterval(fetchGraphData, 60000);
+go();
+
 </script>
 
 {% endblock %}

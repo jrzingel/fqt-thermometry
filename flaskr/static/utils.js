@@ -74,8 +74,3 @@ async function fetchFridgesFromAPI(query) {
     });
     return await response.json();
 }
-
-function capitalize(s) {
-    // Capitalize the first letter of a string
-    return s && String(s[0]).toUpperCase() + String(s).slice(1);
-}

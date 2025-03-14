@@ -168,8 +168,6 @@ def getMultipleFridgeReadings(json_data: dict):
     """Get a range of readings between two timestamps for a given sensor on each fridge."""
     db = get_db()
 
-    print(json_data)
-
     # Sanity checks of the input
     if json_data["earliest_timestamp"] > json_data["latest_timestamp"]:
         return abort(400, "Earliest timestamp must be before latest timestamp")

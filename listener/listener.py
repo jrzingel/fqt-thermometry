@@ -51,7 +51,7 @@ def watch_X_file(path: str, last_position: int = 0):
     """Return the next line if available"""
     while not os.path.exists(path):
         print(f"Waiting for {path} to become available...")
-        time.sleep(1.0)
+        time.sleep(10.0)
 
     with open(path, "r") as f:
         f.seek(last_position)

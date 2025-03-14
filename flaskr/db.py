@@ -45,22 +45,22 @@ def create_dummy_data():
     db.executemany(
         'INSERT INTO sensors (fridge, name) VALUES (?, ?) ', [("fridge1", "s1"), ("fridge1", "s2"), ("fridge1", "s3")]
     )
-    for sensor in ["s1", "s2", "s3"]:
-        n = 100
-
-        # Gaussian noise data
-        random_values = []
-        i = 1.0
-        for _ in range(n):
-            i += random.gauss(0, 0.1)
-            i = max(0.0, i)
-            random_values.append(i)
-        random_timestamps = [datetime.now(UTC) - timedelta(hours=random.randint(0, 12), minutes=random.randint(0, 59), seconds=random.randint(0, 59)) for _ in range(n)]
-        random_timestamps.sort()
-        tuples = [(t, "fridge1", sensor, te) for t, te in zip(random_timestamps, random_values)]
-        db.executemany(
-            'INSERT INTO temperatures (timestamp, fridge, sensor, temp) VALUES (?, ?, ?, ?)', tuples
-        )
+    for fridge in ["queenie", "scarlett", "tallulah", "ursula", "venus"]:
+        for sensor in ["50K", "4K", "magnet", "still", "mxc"]:
+            n = 100
+            # Gaussian noise data
+            random_values = []
+            i = 1.0
+            for _ in range(n):
+                i += random.gauss(0, 0.1)
+                i = max(0.0, i)
+                random_values.append(i)
+            random_timestamps = [datetime.now(UTC) - timedelta(hours=random.randint(0, 12), minutes=random.randint(0, 59), seconds=random.randint(0, 59)) for _ in range(n)]
+            random_timestamps.sort()
+            tuples = [(t, fridge, sensor, te) for t, te in zip(random_timestamps, random_values)]
+            db.executemany(
+                'INSERT INTO temperatures (timestamp, fridge, sensor, temp) VALUES (?, ?, ?, ?)', tuples
+            )
     db.commit()
 
 

@@ -18,6 +18,10 @@
 
 
 <script>
+function capitalize(s) {
+    // Capitalize the first letter of a string
+    return s && String(s[0]).toUpperCase() + String(s).slice(1);
+}
 
 function makeChart(data) {
     console.time("chart");
@@ -32,7 +36,7 @@ function makeChart(data) {
     const seriesOpts = [{}]
     for (let i = 1; i < data.length; i++) {
         seriesOpts.push({
-            label: FRIDGES[i - 1][0],
+            label: capitalize(FRIDGES[i - 1][0]),
             stroke: COLOURS[i - 1],
             spanGaps: true,
             scale: "K",
@@ -100,8 +104,11 @@ function go() {
 // Specify graphs to plot.
 // Will create one large plot for all the MXC sensors of each fridge
 const FRIDGES = [
-    ["fridge1", "s1"],
-    ["fridge1", "s2"]
+    ["queenie", "mxc"],
+    ["scarlett", "mxc"],
+    ["tallulah", "mxc"],
+    ["ursula", "mxc"],
+    ["venus", "mxc"]
 ];
 const COLOURS = ["blue", "red", "green", "purple", "orange"];
 

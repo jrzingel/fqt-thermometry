@@ -10,10 +10,10 @@
     </div>
 </div>
 
-<h2 id="status">Loading page...</h2>
+<h2 id="status">Loading page</h2>
 
 <div id="graphs"></div>
-<script src="{{ url_for('static', filename='utils.js') }}"></script>
+
 
 {#<div class="grid grid-cols-1 md:grid-cols-2 gap-4">#}
 {#    <div class="bg-red-500 rounded-lg p-4">Div 1</div>#}
@@ -23,6 +23,49 @@
 {#</div>#}
 
 <script>
+function capitalize(s) {
+    // Capitalize the first letter of a string
+    return s && String(s[0]).toUpperCase() + String(s).slice(1);
+}
+
+// On the page load, get the last 7 days of data
+function setDefaultTimestamps() {
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    document.getElementById("startTime").value = sevenDaysAgo.toISOString().slice(0, 16);
+}
+
+function getSize(divisor=1.0) {
+    let w = document.getElementById("workspace").offsetWidth / divisor;  // Scale everything based on this
+    return {
+        width: w * 0.97,
+        height: w * 0.3
+    }
+}
+
+
+function getData(packed) {
+    console.time('prep');
+    // epoch,t1,t2,t3,t5,t6
+
+    let data = packed;
+
+    console.timeEnd("prep");
+    return data;
+}
+
+function prepData(packed) {
+    // Unpack the data into a form uPlot likes
+    let data = [packed["timestamps"]];
+    for (let key in packed["readings"]) {
+        data.push(packed["readings"][key]);
+    }
+    console.log(packed);
+    console.log(data);
+    return data;
+}
+
 
 function makeChart(data) {
     console.time("chart");
@@ -35,7 +78,7 @@ function makeChart(data) {
     const cursorOpts = {
         lock: true,
         focus: {
-            prox: 32
+            prox: 16
         },
         sync: {
             key: mooSync.key,
@@ -47,7 +90,7 @@ function makeChart(data) {
     const seriesOpts = [{}]
     for (let i = 1; i < data.length; i++) {
         seriesOpts.push({
-            label: SENSORS[i - 1],
+            label: capitalize(SENSORS[i - 1]),
             stroke: COLOURS[i - 1],
             spanGaps: true,
             scale: "K",
@@ -90,7 +133,7 @@ function makeChart(data) {
             series: [
                 {},
                 {
-                    label: SENSORS[i-1],
+                    label: capitalize(SENSORS[i-1]),
                     stroke: COLOURS[i-1],
                     spanGaps: true,
                     value: (u, v) => v == null ? '' : v.toFixed(3) + "K",
@@ -125,9 +168,6 @@ function makeChart(data) {
             status.textContent = "Data fetched, rendering..."
             let data = prepData(packed);
             uplot_main.setData(data);
-            for (let i = 1; i < data.length; i++) {
-                uplots[i-1].setData([data[0], data[i]]);
-            }
             status.textContent = "Done!"
         });
     });
@@ -149,6 +189,30 @@ function makeChart(data) {
 }
 
 
+async function fetchFromAPI(fridge, sensors) {
+    // Query the API for fridge sensor data
+    const startTime = document.getElementById("startTime").value;
+    const endTime = new Date().toISOString().slice(0, 16);
+    const requestData = {
+        earliest_timestamp: startTime,
+        latest_timestamp: endTime,
+        fridge: fridge,
+        sensors: sensors
+    };
+
+    console.log(requestData);
+
+    const response = await fetch('http://127.0.0.1:5000/api/v1/range', {
+        method: 'POST',
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(requestData)
+    });
+    const json_data = await response.json();
+    console.log(json_data);
+    return json_data;
+}
 
 function go() {
     let status = document.getElementById("status");  // Update this to let the user know the progress
@@ -163,16 +227,15 @@ function go() {
 
 // Specify graphs to plot.
 // Will create one large plot for everything, and then an individual plot for each sensor.
-const FRIDGE = "fridge1";
-const SENSORS = ["s1", "s2", "s3"] //["T1 50K", "T2 4K", "T3 Magnet", "T5 Still", "T6 MXC"];
+const FRIDGE = "{{ fridge }}";
+const SENSORS = ["50K", "4K", "magnet", "still", "mxc"];
 const COLOURS = ["blue", "red", "green", "purple", "orange"];
-
-// TODO: Make this use uplot1.setData(data); to update the data
 
 
 setDefaultTimestamps();
 go();
 
+// TODO: Add interval to refresh the data using `uPlot.setData()`
 
 </script>
 

@@ -220,25 +220,6 @@ def getMultipleFridgeReadings(json_data: dict):
     }
 
 
-
-@bp.post("/v1/random_range")
-@bp.input(RangedReadingSchema)
-@bp.output(RangedResponseSchema)
-def getRandom(json_data: dict):
-    """Return random readings"""
-    n = 100
-    start, end = int(json_data["earliest_timestamp"].timestamp()), int(json_data["latest_timestamp"].timestamp())
-    timestamps = [random.randrange(start, end) for _ in range(n)]
-    timestamps.sort()
-    timestamps = [datetime.fromtimestamp(i) for i in timestamps]
-    return {
-        "readings": [random.random()] * n,
-        "timestamps": timestamps,
-        "fridge": json_data["fridge"],
-        "sensor": json_data["sensor"],
-    }
-
-
 @bp.post("/v1/new")
 @bp.input(ReadingSchema)
 @bp.output(DefaultResponseSchema)

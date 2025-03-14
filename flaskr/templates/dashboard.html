@@ -3,24 +3,20 @@
 {% block content %}
 
 
-<div class="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="w-full flex justify-between items-center">
     <div>
-        <label for="startTime" class="block text-sm font-medium text-gray-700">Start Time:</label>
+        <p>Click and drag to zoom in. Double click to reset the window. Automatically updates with live data.</p>
+    </div>
+    <div class="w-1/4">
+        <div class="flex justify-between items-center">
+            <label for="startTime" class="block text-sm font-medium text-gray-700">Time from:</label>
+            <h2 id="status">Loading page</h2>
+        </div>
         <input type="datetime-local" id="startTime" class="mt-1 block w-full p-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
     </div>
 </div>
 
-<h2 id="status">Loading page</h2>
-
 <div id="graphs"></div>
-
-
-{#<div class="grid grid-cols-1 md:grid-cols-2 gap-4">#}
-{#    <div class="bg-red-500 rounded-lg p-4">Div 1</div>#}
-{#    <div class="bg-green-500 rounded-lg p-4">Div 2</div>#}
-{#    <div class="bg-blue-500 rounded-lg p-4">Div 3</div>#}
-{#    <div class="bg-yellow-500 rounded-lg p-4">Div 4</div>#}
-{#</div>#}
 
 <script>
 function capitalize(s) {

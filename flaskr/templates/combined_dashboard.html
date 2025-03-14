@@ -2,16 +2,10 @@
 
 {% block content %}
 
-<p>View all fridge temperatures and pressures at once</p>
-
-<div class="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div>
-        <label for="startTime" class="block text-sm font-medium text-gray-700">Start Time:</label>
-        <input type="datetime-local" id="startTime" class="mt-1 block w-full p-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-    </div>
+<div class="w-full flex justify-between items-center">
+    <p>Click and drag to zoom in. Double click to reset the window. Automatically updates with live data.</p>
+    <h2 id="status">Loading page...</h2>
 </div>
-
-<h2 id="status">Loading page...</h2>
 
 <div id="graphs"></div>
 <script src="{{ url_for('static', filename='utils.js') }}"></script>
@@ -64,23 +58,6 @@ function makeChart(data) {
 
     let uplot_main = new uPlot(opts_main, data, document.getElementById("graphs"));
 
-    // Dynamically update the data when required
-    document.getElementById("startTime").addEventListener("change", function() {
-        // Update the data if the start time changes
-        let status = document.getElementById("status");  // Update this to let the user know the progress
-        if (document.getElementById("startTime").value === "") {
-            return  // Don't do anything if the start time is empty
-        }
-
-        status.textContent = "Fetching data..."
-        fetchFromAPI(FRIDGE, SENSORS).then(packed => {
-            status.textContent = "Data fetched, rendering..."
-            let data = prepData(packed);
-            uplot_main.setData(data);
-            status.textContent = "Done!"
-        });
-    });
-
     // Dynamically change the size of the plot when required
     window.addEventListener("resize", function() {
         uplot_main.setSize(getSize());
@@ -108,11 +85,11 @@ const FRIDGES = [
     ["scarlett", "mxc"],
     ["tallulah", "mxc"],
     ["ursula", "mxc"],
-    ["venus", "mxc"]
+    ["venus", "mxc"],
+    ["winona", "mxc"]
 ];
-const COLOURS = ["blue", "red", "green", "purple", "orange"];
+const COLOURS = ["blue", "red", "green", "purple", "orange", "pink"];
 
-setDefaultTimestamps();
 go();
 
 </script>

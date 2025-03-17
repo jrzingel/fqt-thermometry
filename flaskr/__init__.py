@@ -18,7 +18,7 @@ def create_app():
     )
 
     # Load config
-    app.config.from_pyfile("config.py", silent=False)
+    #app.config.from_pyfile("config.py", silent=False)
 
     # Check folders exist
     try:

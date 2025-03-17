@@ -39,12 +39,12 @@ def create_dummy_data():
     from datetime import datetime
 
     db = get_db()
-    db.executemany(
-        'INSERT INTO fridges (name) VALUES (?)', [("fridge1",), ("fridge2",)]
-    )
-    db.executemany(
-        'INSERT INTO sensors (fridge, name) VALUES (?, ?) ', [("fridge1", "s1"), ("fridge1", "s2"), ("fridge1", "s3")]
-    )
+    # db.executemany(
+    #     'INSERT INTO fridges (name) VALUES (?)', [("fridge1",), ("fridge2",)]
+    # )
+    # db.executemany(
+    #     'INSERT INTO sensors (fridge, name) VALUES (?, ?) ', [("fridge1", "s1"), ("fridge1", "s2"), ("fridge1", "s3")]
+    # )
     for fridge in ["queenie", "scarlett", "tallulah", "ursula", "venus"]:
         for sensor in ["50K", "4K", "magnet", "still", "mxc"]:
             n = 100

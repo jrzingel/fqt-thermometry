@@ -10,7 +10,7 @@ CREATE TABLE pressures (
     sensor TEXT NOT NULL,
     pressure REAL NOT NULL
 );
-CREATE UNIQUE INDEX no_duplicate_readings ON pressures (timestamp, fridge, sensor, pressure);
+CREATE UNIQUE INDEX no_duplicate_pressures ON pressures (timestamp, fridge, sensor, pressure);
 
 CREATE TABLE temperatures (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -19,4 +19,4 @@ CREATE TABLE temperatures (
     sensor TEXT NOT NULL,
     temp REAL NOT NULL
 );
-CREATE UNIQUE INDEX no_duplicate_readings ON temperatures (timestamp, fridge, sensor, temp);
+CREATE UNIQUE INDEX no_duplicate_temperatures ON temperatures (timestamp, fridge, sensor, temp);

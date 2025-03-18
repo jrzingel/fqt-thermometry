@@ -69,7 +69,7 @@ function makeChart(data) {
 function go() {
     let status = document.getElementById("status");  // Update this to let the user know the progress
     status.textContent = "Fetching data..."
-    fetchFridgesFromAPI(FRIDGES).then(packed => {
+    fetchFridgesFromAPI("{{ url }}", FRIDGES).then(packed => {
         status.textContent = "Data fetched, rendering..."
         let data = prepData(packed);
         makeChart(data);

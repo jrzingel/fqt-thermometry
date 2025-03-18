@@ -17,6 +17,7 @@
 </div>
 
 <div id="graphs"></div>
+<script src="{{ url_for('static', filename='utils.js') }}"></script>
 
 <script>
 function capitalize(s) {
@@ -184,36 +185,10 @@ function makeChart(data) {
     console.timeEnd("chart");
 }
 
-
-async function fetchFromAPI(fridge, sensors) {
-    // Query the API for fridge sensor data
-    const startTime = document.getElementById("startTime").value;
-    const endTime = new Date().toISOString().slice(0, 16);
-    const requestData = {
-        earliest_timestamp: startTime,
-        latest_timestamp: endTime,
-        fridge: fridge,
-        sensors: sensors
-    };
-
-    console.log(requestData);
-
-    const response = await fetch('http://127.0.0.1:5000/api/v1/range', {
-        method: 'POST',
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(requestData)
-    });
-    const json_data = await response.json();
-    console.log(json_data);
-    return json_data;
-}
-
 function go() {
     let status = document.getElementById("status");  // Update this to let the user know the progress
     status.textContent = "Fetching data..."
-    fetchFromAPI(FRIDGE, SENSORS).then(packed => {
+    fetchFromAPI("{{ url }}", FRIDGE, SENSORS).then(packed => {
         status.textContent = "Data fetched, rendering..."
         let data = prepData(packed);
         makeChart(data);

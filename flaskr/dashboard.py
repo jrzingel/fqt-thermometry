@@ -11,9 +11,9 @@ def dashboard():
     fridge = request.args.get('fridge', type=str)
     if fridge is None:
         # Render all the fridges at once
-        return render_template("combined_dashboard.html", title="Fridge Status")
+        return render_template("combined_dashboard.html", title="Fridge Status", url=request.url_root)
     else:
         # Render just one fridge
-        return render_template("dashboard.html", fridge=fridge, title=f"{fridge.title()} Fridge Status")
+        return render_template("dashboard.html", fridge=fridge, title=f"{fridge.title()} Fridge Status", url=request.url_root)
 
 

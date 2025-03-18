@@ -34,7 +34,7 @@ function now() {
     return new Date().toISOString().slice(0, 16);
 }
 
-async function fetchFromAPI(fridge, sensors) {
+async function fetchFromAPI(server, fridge, sensors) {
     // Query the API for fridge sensor data
     const startTime = document.getElementById("startTime").value;
     const endTime = new Date().toISOString().slice(0, 16);
@@ -45,7 +45,7 @@ async function fetchFromAPI(fridge, sensors) {
         sensors: sensors
     };
 
-    const response = await fetch('http://127.0.0.1:5000/api/v1/range', {
+    const response = await fetch(server + '/api/v1/range', {
         method: 'POST',
         headers: {
             "Content-Type": "application/json"
@@ -55,7 +55,7 @@ async function fetchFromAPI(fridge, sensors) {
     return await response.json();
 }
 
-async function fetchFridgesFromAPI(query) {
+async function fetchFridgesFromAPI(server, query) {
     // Query the API for fridge sensor data
     const startTime = new Date(new Date().getTime() - 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16);  // 3 days ago
     const endTime = now();
@@ -65,7 +65,7 @@ async function fetchFridgesFromAPI(query) {
         query: query
     };
 
-    const response = await fetch('http://127.0.0.1:5000/api/v1/fridges', {
+    const response = await fetch(server + '/api/v1/fridges', {
         method: 'POST',
         headers: {
             "Content-Type": "application/json"

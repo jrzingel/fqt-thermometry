@@ -3,21 +3,21 @@
 
 # DATE will be replaced with the current date
 
-fridge: "test"
+fridge: "queenie"
 
 temperatures:
   T1:
-    sensor: "T1 50K"
+    sensor: "50K"
     log: "CH1 T DATE.log"
   T2:
-    sensor: "T2 4K"
+    sensor: "4K"
     log: "CH2 T DATE.log"
   T3:
-    sensor: "T3 Magnet"
+    sensor: "magnet"
     log: "CH3 T DATE.log"
   T5:
-    sensor: "T5 Still"
+    sensor: "still"
     log: "CH5 T DATE.log"
   T6:
-    sensor: "T6 MXC"
+    sensor: "mxc"
     log: "CH6 T DATE.log"

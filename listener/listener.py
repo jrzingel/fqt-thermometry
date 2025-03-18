@@ -3,6 +3,7 @@
 import os
 import requests
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import yaml
 import time
 from requests.exceptions import HTTPError
@@ -10,7 +11,7 @@ from requests.exceptions import HTTPError
 
 # TODO: Will need to adjust this on the actual machine
 LOG_DIR = os.path.join(os.getcwd(), "demo_logs")
-SERVER_LOCATION = "127.0.0.1:5000"
+SERVER_LOCATION = "129.94.115.104:5000"
 CONFIG_FILE = os.path.join(os.getcwd(), "fridge.yaml")
 
 
@@ -104,7 +105,7 @@ def listen():
             if line: # Something new. Upload it!
                 # Must parse the string
                 splits = line.strip().split(",")
-                timestamp = datetime.strptime(','.join(splits[0:2]), "%d-%m-%y,%H:%M:%S")
+                timestamp = datetime.strptime(','.join(splits[0:2]), "%d-%m-%y,%H:%M:%S").astimezone(tz=ZoneInfo("Australia/Sydney"))
                 reading = float(splits[2])
                 print(temp_sensor, timestamp.isoformat(), reading)
                 upload_reading(timestamp, fridge, params["sensor"], reading)

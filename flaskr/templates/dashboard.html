@@ -90,7 +90,6 @@ function makeChart(data) {
             label: capitalize(SENSORS[i - 1]),
             stroke: COLOURS[i - 1],
             spanGaps: true,
-            scale: "K",
             value: (u, v) => v == null ? '' : v.toFixed(3) + "K"
         });
     }
@@ -106,11 +105,15 @@ function makeChart(data) {
         axes: [
             {},
             {
-                scale: "K",
-                values: (self, ticks) => ticks.map(v => v.toFixed(3) + "K"),
+                values: (self, ticks) => ticks.map(v => v == null ? '' : v.toFixed(3) + "K"),
                 label: "Temperature (K)"
             }
-        ]
+        ],
+        scales: {
+            y: {
+                distr: 3
+            }
+        }
     }
 
     let uplot_main = new uPlot(opts_main, data, document.getElementById("graphs"));

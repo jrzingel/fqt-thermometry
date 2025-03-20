@@ -1,4 +1,8 @@
 # Script to run on the fridge PC that uploads the logs to the server
+# Copied and pasted onto the fridge PCs.
+# For an up-to-date version, check the repository on GitHub : https://github.com/jrzingel/fqt-thermometry
+
+__VERSION__ = 1.0
 
 import os
 import requests
@@ -9,9 +13,8 @@ import time
 from requests.exceptions import HTTPError
 
 
-# TODO: Will need to adjust this on the actual machine
 LOG_DIR = os.path.join(os.getcwd(), "demo_logs")
-SERVER_LOCATION = "129.94.115.104:5000"
+SERVER_LOCATION = "129.94.115.104"
 CONFIG_FILE = os.path.join(os.getcwd(), "fridge.yaml")
 
 
@@ -105,12 +108,13 @@ def listen():
             if line: # Something new. Upload it!
                 # Must parse the string
                 splits = line.strip().split(",")
-                timestamp = datetime.strptime(','.join(splits[0:2]), "%d-%m-%y,%H:%M:%S").astimezone(tz=ZoneInfo("Australia/Sydney"))
+                local_time = datetime.strptime(','.join(splits[0:2]), "%d-%m-%y,%H:%M:%S").astimezone(tz=ZoneInfo("Australia/Sydney"))  # in local time
+                utc_time = local_time.astimezone(ZoneInfo("UTC"))
                 reading = float(splits[2])
-                print(temp_sensor, timestamp.isoformat(), reading)
-                upload_reading(timestamp, fridge, params["sensor"], reading)
+                print(temp_sensor, utc_time.isoformat(), reading)
+                upload_reading(utc_time, fridge, params["sensor"], reading)  # Only upload the UTC time
 
-        time.sleep(1.0)  # Logs only update every minute
+        time.sleep(30.0)  # Logs only update every minute so no need to check more often
 
 
 if __name__ == "__main__":
@@ -119,7 +123,19 @@ if __name__ == "__main__":
         raise Exception("Server seems dead.")
     print("Server ONLINE.")
 
-    listen()
+    while True:
+        try:
+            listen()
+        except Exception as e:
+            print(e)
+
+            # Try debug
+            while not check_alive():  # server went, down. Wait for it to come back up
+                print("Waiting for server to become available...")
+                time.sleep(60.0)
+
+            print("Server alive, retrying listener...")
+
 
 
 

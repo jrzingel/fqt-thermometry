@@ -121,7 +121,7 @@ function makeChart(data) {
             label: capitalize(SENSORS[i - 1]),
             stroke: COLOURS[i - 1],
             spanGaps: true,
-            value: (u, v) => v == null ? '' : v.toFixed(3)
+            value: (u, v) => v == null ? '' : v.toFixed(3) + UNIT
         });
     }
 
@@ -133,13 +133,6 @@ function makeChart(data) {
         },
         cursor: cursorOpts,
         series: seriesOpts,
-        axes: [
-            {},
-            {
-                values: (self, ticks) => ticks.map(v => v == null ? '' : v.toFixed(3)),
-                label: TITLE
-            }
-        ],
     {% if not showPressures %}
         scales: {
             y: {
@@ -170,18 +163,9 @@ function makeChart(data) {
                     label: capitalize(SENSORS[i-1]),
                     stroke: COLOURS[i-1],
                     spanGaps: true,
-                    value: (u, v) => v == null ? '' : v.toFixed(3),
-                    scale: "K"
+                    value: (u, v) => v == null ? '' : v.toFixed(3) + UNIT,
                 }
             ],
-            axes: [
-                {},
-                {
-                    scale: "K",
-                    values: (self, ticks) => ticks.map(v => v.toFixed(3)),
-                    label: TITLE
-                }
-            ]
         }
 
         let uplot = new uPlot(opts, [data[0], data[i]], document.getElementById("graphs"));
@@ -237,10 +221,12 @@ const COLOURS = ["blue", "red", "green", "purple", "orange"];
     const TITLE = "Pressures (mbar)";
     const SENSORS = ["P1", "P2", "P3", "P4", "P5"];
     const SUBPLOT_ORDER = [1, 2, 3, 4, 5];  // 1-indexed
+    const UNIT = ' mBar';
 {% else %}
     const SENSORS = ["50K", "4K", "magnet", "still", "mxc"];
     const TITLE = "Temperatures (K)";
     const SUBPLOT_ORDER = [1, 2, 4, 5, 3];  // 1-indexed
+    const UNIT = ' K';
 {% endif %}
 
 

@@ -61,6 +61,22 @@ def create_dummy_data():
             db.executemany(
                 'INSERT INTO temperatures (timestamp, fridge, sensor, temp) VALUES (?, ?, ?, ?)', tuples
             )
+        for sensor in ["P1", "P2", "P3", "P4", "P5"]:
+            offset = datetime.now(UTC).timestamp()
+            x = np.linspace(offset - 12*60*60, offset, n)
+            timestamps = [datetime.fromtimestamp(i) for i in x]
+            n = 100
+            # Gaussian noise data
+            random_values = []
+            i = 500.0
+            for _ in range(n):
+                i += random.gauss(0, 10)
+                i = max(0.0, i)
+                random_values.append(i)
+            tuples = [(t, fridge, sensor, te) for t, te in zip(random_timestamps, random_values)]
+            db.executemany(
+                'INSERT INTO temperatures (timestamp, fridge, sensor, temp) VALUES (?, ?, ?, ?)', tuples
+            )
     db.commit()
 
 

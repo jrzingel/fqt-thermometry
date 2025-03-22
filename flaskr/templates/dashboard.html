@@ -106,7 +106,7 @@ function setupPlots(num_plots) {
     for (const i of SUBPLOT_ORDER) {
         // Plot [data[0] (timestamps), data[i] (sensor data)]
         let opts = {
-            title: "Sensor " + SENSORS[i-1],
+            {#title: "Sensor " + SENSORS[i-1],#}
             ...getSize(2.1, 1.5, 600, 200),
             focus: {
                 alpha: 0.3,

@@ -17,8 +17,9 @@ function capitalize(s) {
     return s && String(s[0]).toUpperCase() + String(s).slice(1);
 }
 
-function makeChart(data) {
+function setupPlots(num_plots) {
     console.time("chart");
+    let data = Array.from({ length: num_plots }, () => []);
 
     const cursorOpts = {
         lock: true,
@@ -34,12 +35,12 @@ function makeChart(data) {
             stroke: COLOURS[i - 1],
             spanGaps: true,
             scale: "K",
-            value: (u, v) => v == null ? '' : v.toFixed(3) + "K"
+            value: (u, v) => v == null ? '' : (v*1000).toFixed(1) + " mK"
         });
     }
 
     const opts_main = {
-        title: "Temperatures",
+        title: "Mixing Chamber Temperatures (mK)",
         ...getSize(),
         focus: {
             alpha: 0.3,
@@ -50,8 +51,7 @@ function makeChart(data) {
             {},
             {
                 scale: "K",
-                values: (self, ticks) => ticks.map(v => v.toFixed(3) + "K"),
-                label: "Temperature (K)"
+                values: (self, ticks) => ticks.map(v => v*1000),
             }
         ]
     }
@@ -64,17 +64,27 @@ function makeChart(data) {
     });
 
     console.timeEnd("chart");
+    return uplot_main
 }
 
 function go() {
     let status = document.getElementById("status");  // Update this to let the user know the progress
-    status.textContent = "Fetching data..."
-    fetchFridgesFromAPI("{{ url }}", FRIDGES).then(packed => {
-        status.textContent = "Data fetched, rendering..."
-        let data = prepData(packed);
-        makeChart(data);
-        status.textContent = "Done!"
-    });
+
+    status.textContent = "Rendering charts...";
+    let plot = setupPlots(FRIDGES.length);
+
+    function refreshData() {
+        status.textContent = "Fetching data...";
+        fetchFridgesFromAPI("{{ url }}", FRIDGES).then(packed => {
+            status.textContent = "Data fetched, rendering...";
+            let data = prepData(packed);
+            plot.setData(data);
+            status.textContent = "Done!";
+        });
+    }
+
+    refreshData();
+    setInterval(refreshData, 30_000);
 }
 
 

@@ -95,11 +95,11 @@ function prepData(packed) {
 }
 
 
-function makeChart(data) {
+function setupPlots(num_plots) {
     console.time("chart");
 
+    let data = Array.from({ length: num_plots + 1 }, () => []);
     let mooSync = uPlot.sync("moo");
-
 
     const matchSyncKeys = (own, ext) => own == ext;
 
@@ -144,7 +144,7 @@ function makeChart(data) {
 
     let uplot_main = new uPlot(opts_main, data, document.getElementById("graphs"));
 
-    let uplots = []
+    let uplots = [];
 
     // For each sensor, create their own subplot
     for (const i of SUBPLOT_ORDER) {
@@ -172,24 +172,6 @@ function makeChart(data) {
         uplots.push(uplot);
     }
 
-
-    // Dynamically update the data when required
-    document.getElementById("startTime").addEventListener("change", function() {
-        // Update the data if the start time changes
-        let status = document.getElementById("status");  // Update this to let the user know the progress
-        if (document.getElementById("startTime").value === "") {
-            return  // Don't do anything if the start time is empty
-        }
-
-        status.textContent = "Fetching data..."
-        fetchFromAPI(FRIDGE, SENSORS).then(packed => {
-            status.textContent = "Data fetched, rendering..."
-            let data = prepData(packed);
-            uplot_main.setData(data);
-            status.textContent = "Done!"
-        });
-    });
-
     // Dynamically change the size of the plot when required
     window.addEventListener("resize", function() {
         uplot_main.setSize(getSize());
@@ -199,23 +181,43 @@ function makeChart(data) {
     });
 
     console.timeEnd("chart");
+    return [uplot_main, uplots]
 }
 
 function go() {
     let status = document.getElementById("status");  // Update this to let the user know the progress
-    status.textContent = "Fetching data..."
-    fetchFromAPI("{{ url }}", FRIDGE, SENSORS).then(packed => {
-        status.textContent = "Data fetched, rendering..."
-        let data = prepData(packed);
-        makeChart(data);
-        status.textContent = "Done!"
+
+    status.textContent = "Rendering charts...";
+    let plots = setupPlots(SENSORS.length);
+
+    function refreshData() {
+        status.textContent = "Fetching data..."
+        fetchFromAPI("{{ url }}", FRIDGE, SENSORS).then(packed => {
+            let data = prepData(packed);
+            plots[0].setData(data);
+            for (let i = 1; i < data.length; i++) {
+                plots[1][i-1].setData([data[0], data[i]])
+            }
+            status.textContent = "Done!"
+        });
+    }
+
+    refreshData();
+    setInterval(refreshData, 30_000);
+
+    // Dynamically update the data when required
+    document.getElementById("startTime").addEventListener("change", function() {
+        if (document.getElementById("startTime").value === "") {
+            return  // Don't do anything if the start time is empty
+        }
+        refreshData();
     });
 }
 
 // Specify graphs to plot.
 // Will create one large plot for everything, and then an individual plot for each sensor.
 const FRIDGE = "{{ fridge }}";
-const COLOURS = ["blue", "red", "green", "purple", "orange"];
+const COLOURS = ["blue", "red", "green", "purple", "orange", "pink"];
 
 {% if showPressures %}
     const TITLE = "Pressures (mbar)";
@@ -233,8 +235,5 @@ const COLOURS = ["blue", "red", "green", "purple", "orange"];
 setDefaultTimestamps();
 go();
 
-// TODO: Add interval to refresh the data using `uPlot.setData()`
-
 </script>
-
 {% endblock %}

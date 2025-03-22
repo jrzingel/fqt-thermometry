@@ -19,7 +19,7 @@ function capitalize(s) {
 
 function setupPlots(num_plots) {
     console.time("chart");
-    let data = Array.from({ length: num_plots }, () => []);
+    let data = Array.from({ length: num_plots + 1 }, () => []);
 
     const cursorOpts = {
         lock: true,
@@ -76,7 +76,6 @@ function go() {
     function refreshData() {
         status.textContent = "Fetching data...";
         fetchFridgesFromAPI("{{ url }}", FRIDGES).then(packed => {
-            status.textContent = "Data fetched, rendering...";
             let data = prepData(packed);
             plot.setData(data);
             status.textContent = "Done!";
@@ -103,5 +102,4 @@ const COLOURS = ["blue", "red", "green", "purple", "orange", "pink"];
 go();
 
 </script>
-
 {% endblock %}

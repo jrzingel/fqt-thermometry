@@ -7,6 +7,12 @@
     <div>
         <p>Click and drag to zoom in. Double click to reset the window. Automatically updates with live data.</p>
     </div>
+
+    <div class="flex items-center space-x-0 rounded-full border border-gray-300 bg-white p-1">
+        <button id="temperaturesBtn" class="px-4 py-2 rounded-full text-gray-700 bg-white hover:bg-gray-200 focus:outline-none">Temperatures</button>
+        <button id="pressuresBtn" class="px-4 py-2 rounded-full text-gray-700 bg-white hover:bg-gray-200 focus:outline-none">Pressures</button>
+    </div>
+
     <div class="w-1/4">
         <div class="flex justify-between items-center">
             <label for="startTime" class="block text-sm font-medium text-gray-700">Time from:</label>
@@ -18,6 +24,31 @@
 
 <div id="graphs"></div>
 <script src="{{ url_for('static', filename='utils.js') }}"></script>
+
+<script>
+// Set ?type=... in the url based on the toggle
+const pressuresBtn = document.getElementById('pressuresBtn');
+const temperaturesBtn = document.getElementById('temperaturesBtn');
+const params = new URLSearchParams(window.location.search);
+const type = params.get('type');
+
+function redirectWithQuery(param) {
+    const url = new URL(window.location);
+    url.searchParams.set('type', param);
+    window.location = url; // Full reload with new query param
+}
+
+pressuresBtn.addEventListener('click', () => { redirectWithQuery('pressures'); });
+temperaturesBtn.addEventListener('click', () => { redirectWithQuery('temperatures'); });
+
+if (type === 'pressures') {
+    pressuresBtn.classList.remove('bg-white', 'text-gray-700');
+    pressuresBtn.classList.add('bg-blue-600', 'text-white');
+} else {
+    temperaturesBtn.classList.remove('bg-white', 'text-gray-700');
+    temperaturesBtn.classList.add('bg-blue-600', 'text-white');
+}
+</script>
 
 <script>
 function capitalize(s) {
@@ -33,11 +64,11 @@ function setDefaultTimestamps() {
     document.getElementById("startTime").value = sevenDaysAgo.toISOString().slice(0, 16);
 }
 
-function getSize(divisor=1.0) {
-    let w = document.getElementById("workspace").offsetWidth / divisor;  // Scale everything based on this
+function getSize(div_w=1.0, div_h=1.0, min_width=0, max_height=Infinity) {
+    let w = document.getElementById("workspace").offsetWidth;  // Scale everything based on this
     return {
-        width: w * 0.97,
-        height: w * 0.3
+        width: Math.max(w * 0.97 / div_w, min_width),
+        height: Math.min(w * 0.3 / div_h, max_height)
     }
 }
 
@@ -121,11 +152,12 @@ function makeChart(data) {
     let uplots = []
 
     // For each sensor, create their own subplot
-    for (let i = 1; i < data.length; i++) {
+    for (const i of SUBPLOT_ORDER) {
+        console.log(i);
         // Plot [data[0] (timestamps), data[i] (sensor data)]
         let opts = {
             title: "Sensor " + SENSORS[i-1],
-            ...getSize(2.01),
+            ...getSize(2.1, 1.5, 600, 200),
             focus: {
                 alpha: 0.3,
             },
@@ -204,6 +236,7 @@ function go() {
 const FRIDGE = "{{ fridge }}";
 const SENSORS = ["50K", "4K", "magnet", "still", "mxc"];
 const COLOURS = ["blue", "red", "green", "purple", "orange"];
+const SUBPLOT_ORDER = [1, 2, 4, 5, 3]  // 1-indexed
 
 
 setDefaultTimestamps();

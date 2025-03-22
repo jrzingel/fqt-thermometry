@@ -27,8 +27,6 @@ function prepData(packed) {
     for (let key in packed["readings"]) {
         data.push(packed["readings"][key]);
     }
-    console.log(packed);
-    console.log(data);
     return data;
 }
 

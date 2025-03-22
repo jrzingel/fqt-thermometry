@@ -71,11 +71,16 @@ function go() {
 
     function refreshData() {
         status.textContent = "Fetching data...";
-        fetchFridgesFromAPI("{{ url }}", FRIDGES).then(packed => {
-            let data = prepData(packed);
-            plot.setData(data);
-            status.textContent = "Done!";
-        });
+        fetchFridgesFromAPI("{{ url }}", FRIDGES)
+            .then(packed => {
+                let data = prepData(packed);
+                plot.setData(data);
+                status.textContent = "Done!";
+            })
+            .catch((error) => {
+                status.textContent = "Error!";
+                console.log(error);
+            });
     }
 
     refreshData();

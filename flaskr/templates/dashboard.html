@@ -104,7 +104,6 @@ function setupPlots(num_plots) {
 
     // For each sensor, create their own subplot
     for (const i of SUBPLOT_ORDER) {
-        console.log(i);
         // Plot [data[0] (timestamps), data[i] (sensor data)]
         let opts = {
             title: "Sensor " + SENSORS[i-1],
@@ -148,14 +147,19 @@ function go() {
 
     function refreshData() {
         status.textContent = "Fetching data..."
-        fetchFromAPI("{{ url }}", FRIDGE, SENSORS).then(packed => {
-            let data = prepData(packed);
-            plots[0].setData(data);
-            for (let i = 1; i < data.length; i++) {
-                plots[1][i-1].setData([data[0], data[i]])
-            }
-            status.textContent = "Done!"
-        });
+        fetchFromAPI("{{ url }}", FRIDGE, SENSORS)
+            .then(packed => {
+                let data = prepData(packed);
+                plots[0].setData(data);
+                for (let i = 1; i < data.length; i++) {
+                    plots[1][i-1].setData([data[0], data[i]])
+                }
+                status.textContent = "Done!";
+            })
+            .catch((error) => {
+                status.textContent = "Error!";
+                console.log(error);
+            });
     }
 
     refreshData();

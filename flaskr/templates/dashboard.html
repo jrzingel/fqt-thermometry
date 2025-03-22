@@ -8,12 +8,12 @@
         <p>Click and drag to zoom in. Double click to reset the window. Automatically updates with live data.</p>
     </div>
 
-    <div class="flex items-center space-x-0 rounded-full border border-gray-300 bg-white p-1">
-        <button id="temperaturesBtn" class="px-4 py-2 rounded-full text-gray-700 bg-white hover:bg-gray-200 focus:outline-none">Temperatures</button>
-        <button id="pressuresBtn" class="px-4 py-2 rounded-full text-gray-700 bg-white hover:bg-gray-200 focus:outline-none">Pressures</button>
+    <div class="flex items-bottom space-x-0 rounded-full border border-gray-300 bg-white">
+        <button id="temperaturesBtn" class="px-2 py-2 rounded-full text-gray-700 bg-white hover:bg-gray-200 focus:outline-none">Temperatures</button>
+        <button id="pressuresBtn" class="px-2 py-2 rounded-full text-gray-700 bg-white hover:bg-gray-200 focus:outline-none">Pressures</button>
     </div>
 
-    <div class="w-1/4">
+    <div class="w-1/5">
         <div class="flex justify-between items-center">
             <label for="startTime" class="block text-sm font-medium text-gray-700">Time from:</label>
             <h2 id="status">Loading page</h2>
@@ -42,10 +42,10 @@ pressuresBtn.addEventListener('click', () => { redirectWithQuery('pressures'); }
 temperaturesBtn.addEventListener('click', () => { redirectWithQuery('temperatures'); });
 
 if (type === 'pressures') {
-    pressuresBtn.classList.remove('bg-white', 'text-gray-700');
+    pressuresBtn.classList.remove('bg-white', 'text-gray-700', 'hover:bg-gray-200');
     pressuresBtn.classList.add('bg-blue-600', 'text-white');
 } else {
-    temperaturesBtn.classList.remove('bg-white', 'text-gray-700');
+    temperaturesBtn.classList.remove('bg-white', 'text-gray-700', 'hover:bg-gray-200');
     temperaturesBtn.classList.add('bg-blue-600', 'text-white');
 }
 </script>
@@ -126,7 +126,7 @@ function makeChart(data) {
     }
 
     const opts_main = {
-        title: "Temperatures",
+        title: TITLE,
         ...getSize(),
         focus: {
             alpha: 0.3,
@@ -137,14 +137,16 @@ function makeChart(data) {
             {},
             {
                 values: (self, ticks) => ticks.map(v => v == null ? '' : v.toFixed(3) + "K"),
-                label: "Temperature (K)"
+                label: TITLE
             }
         ],
+    {% if not showPressures %}
         scales: {
             y: {
                 distr: 3
             }
         }
+    {% endif %}
     }
 
     let uplot_main = new uPlot(opts_main, data, document.getElementById("graphs"));
@@ -177,7 +179,7 @@ function makeChart(data) {
                 {
                     scale: "K",
                     values: (self, ticks) => ticks.map(v => v.toFixed(3) + "K"),
-                    label: "Temperature (K)"
+                    label: TITLE
                 }
             ]
         }
@@ -234,9 +236,17 @@ function go() {
 // Specify graphs to plot.
 // Will create one large plot for everything, and then an individual plot for each sensor.
 const FRIDGE = "{{ fridge }}";
-const SENSORS = ["50K", "4K", "magnet", "still", "mxc"];
 const COLOURS = ["blue", "red", "green", "purple", "orange"];
-const SUBPLOT_ORDER = [1, 2, 4, 5, 3]  // 1-indexed
+
+{% if showPressures %}
+    const TITLE = "Pressures (mbar)";
+    const SENSORS = ["P1", "P2", "P3", "P4", "P5"];
+    const SUBPLOT_ORDER = [1, 2, 3, 4, 5];  // 1-indexed
+{% else %}
+    const SENSORS = ["50K", "4K", "magnet", "still", "mxc"];
+    const TITLE = "Temperatures (K)";
+    const SUBPLOT_ORDER = [1, 2, 4, 5, 3];  // 1-indexed
+{% endif %}
 
 
 setDefaultTimestamps();

@@ -51,50 +51,6 @@ if (type === 'pressures') {
 </script>
 
 <script>
-function capitalize(s) {
-    // Capitalize the first letter of a string
-    return s && String(s[0]).toUpperCase() + String(s).slice(1);
-}
-
-// On the page load, get the last 7 days of data
-function setDefaultTimestamps() {
-    const now = new Date();
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-    document.getElementById("startTime").value = sevenDaysAgo.toISOString().slice(0, 16);
-}
-
-function getSize(div_w=1.0, div_h=1.0, min_width=0, max_height=Infinity) {
-    let w = document.getElementById("workspace").offsetWidth;  // Scale everything based on this
-    return {
-        width: Math.max(w * 0.97 / div_w, min_width),
-        height: Math.min(w * 0.3 / div_h, max_height)
-    }
-}
-
-
-function getData(packed) {
-    console.time('prep');
-    // epoch,t1,t2,t3,t5,t6
-
-    let data = packed;
-
-    console.timeEnd("prep");
-    return data;
-}
-
-function prepData(packed) {
-    // Unpack the data into a form uPlot likes
-    let data = [packed["timestamps"]];
-    for (let key in packed["readings"]) {
-        data.push(packed["readings"][key]);
-    }
-    console.log(packed);
-    console.log(data);
-    return data;
-}
-
-
 function setupPlots(num_plots) {
     console.time("chart");
 

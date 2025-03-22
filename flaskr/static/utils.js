@@ -1,5 +1,9 @@
 // Common utility functions used for plotting
 
+function capitalize(s) {
+    // Capitalize the first letter of a string
+    return s && String(s[0]).toUpperCase() + String(s).slice(1);
+}
 
 // On the page load, get the last 7 days of data
 function setDefaultTimestamps() {
@@ -9,14 +13,13 @@ function setDefaultTimestamps() {
     document.getElementById("startTime").value = sevenDaysAgo.toISOString().slice(0, 16);
 }
 
-function getSize(divisor=1.0) {
-    let w = document.getElementById("workspace").offsetWidth / divisor;  // Scale everything based on this
+function getSize(div_w=1.0, div_h=1.0, min_width=0, max_height=Infinity) {
+    let w = document.getElementById("workspace").offsetWidth;  // Scale everything based on this
     return {
-        width: w * 0.97,
-        height: w * 0.3
+        width: Math.max(w * 0.97 / div_w, min_width),
+        height: Math.min(w * 0.3 / div_h, max_height)
     }
 }
-
 
 function prepData(packed) {
     // Unpack the data into a form uPlot likes

@@ -121,7 +121,7 @@ function makeChart(data) {
             label: capitalize(SENSORS[i - 1]),
             stroke: COLOURS[i - 1],
             spanGaps: true,
-            value: (u, v) => v == null ? '' : v.toFixed(3) + "K"
+            value: (u, v) => v == null ? '' : v.toFixed(3)
         });
     }
 
@@ -136,7 +136,7 @@ function makeChart(data) {
         axes: [
             {},
             {
-                values: (self, ticks) => ticks.map(v => v == null ? '' : v.toFixed(3) + "K"),
+                values: (self, ticks) => ticks.map(v => v == null ? '' : v.toFixed(3)),
                 label: TITLE
             }
         ],
@@ -170,7 +170,7 @@ function makeChart(data) {
                     label: capitalize(SENSORS[i-1]),
                     stroke: COLOURS[i-1],
                     spanGaps: true,
-                    value: (u, v) => v == null ? '' : v.toFixed(3) + "K",
+                    value: (u, v) => v == null ? '' : v.toFixed(3),
                     scale: "K"
                 }
             ],
@@ -178,7 +178,7 @@ function makeChart(data) {
                 {},
                 {
                     scale: "K",
-                    values: (self, ticks) => ticks.map(v => v.toFixed(3) + "K"),
+                    values: (self, ticks) => ticks.map(v => v.toFixed(3)),
                     label: TITLE
                 }
             ]
@@ -213,11 +213,6 @@ function makeChart(data) {
             uplot.setSize(getSize(2.01));
         }
     });
-
-    // Sync cursors between plots
-    //mooSync.sub(uplot1);
-    {#mooSync.sub(uplot2);#}
-    {#mooSync.sub(uplot3);#}
 
     console.timeEnd("chart");
 }

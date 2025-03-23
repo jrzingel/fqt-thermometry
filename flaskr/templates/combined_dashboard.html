@@ -73,7 +73,7 @@ function go() {
         status.textContent = "Fetching data...";
         fetchFridgesFromAPI("{{ url }}", FRIDGES)
             .then(packed => {
-                let data = prepData(packed);
+                let data = prepData(packed, FRIDGE_KEYS);
                 plot.setData(data);
                 status.textContent = "Done!";
             })
@@ -98,6 +98,8 @@ const FRIDGES = [
     ["venus", "mxc"],
     ["winona", "mxc"]
 ];
+
+const FRIDGE_KEYS = FRIDGES.map((val) => val[0] + "." + val[1]);
 const COLOURS = ["blue", "red", "green", "purple", "orange", "pink"];
 
 go();

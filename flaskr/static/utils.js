@@ -21,10 +21,10 @@ function getSize(div_w=1.0, div_h=1.0, min_width=0, max_height=Infinity) {
     }
 }
 
-function prepData(packed) {
+function prepData(packed, keys) {
     // Unpack the data into a form uPlot likes
     let data = [packed["timestamps"]];
-    for (let key in packed["readings"]) {
+    for (let key of keys) {
         data.push(packed["readings"][key]);
     }
     return data;

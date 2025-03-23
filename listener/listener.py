@@ -76,11 +76,21 @@ def get_file_position(positions: dict, sensor_name: str):
 
 def listen():
     """Listen for new readings by watching the log files"""
+    global run
+
+    if not os.path.exists(CONFIG_FILE):
+        print(f"Config file '{CONFIG_FILE}' does not exist. Make sure that this file exists, and then try again.")
+        time.sleep(10.0)
+        run = False
+        return
+
     with open(CONFIG_FILE, "r") as f:
         try:
             config = yaml.safe_load(f)
         except yaml.YAMLError as e:
             print(f"Failed to load configuration file: {e}")
+            time.sleep(10.0)
+            run = False
             return
 
     fridge = config["fridge"]
@@ -123,7 +133,8 @@ if __name__ == "__main__":
         raise Exception("Server seems dead.")
     print("Server ONLINE.")
 
-    while True:
+    run = True
+    while run:
         try:
             listen()
         except Exception as e:

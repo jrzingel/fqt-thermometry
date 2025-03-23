@@ -13,7 +13,6 @@ import time
 from requests.exceptions import HTTPError
 
 
-LOG_DIR = os.path.join(os.getcwd(), "demo_logs")
 SERVER_LOCATION = "129.94.115.104"
 CONFIG_FILE = os.path.join(os.getcwd(), "fridge.yaml")
 
@@ -94,6 +93,8 @@ def listen():
             return
 
     fridge = config["fridge"]
+    logdir = config["logdir"]
+    print(f"Watching {fridge} at {logdir}")
 
     # Only upload from the current date to the server
     last_day = datetime.now().strftime("%y-%m-%d")
@@ -111,7 +112,7 @@ def listen():
         # Check temperatures and upload
         for (temp_sensor, params) in config["temperatures"].items():
             file_positions, pos = get_file_position(file_positions, temp_sensor)  # position to file.seek() to
-            file_path = os.path.join(LOG_DIR, today, params["log"].replace("DATE", today))
+            file_path = os.path.join(logdir, today, params["log"].replace("DATE", today))
             line, new_pos = watch_X_file(file_path, pos)
             file_positions[temp_sensor] = new_pos  # save new position (if changed)
 
@@ -123,11 +124,14 @@ def listen():
                 reading = float(splits[2])
                 print(temp_sensor, utc_time.isoformat(), reading)
                 upload_reading(utc_time, fridge, params["sensor"], reading)  # Only upload the UTC time
+                time.sleep(0.1)  # don't overload the server
 
-        time.sleep(30.0)  # Logs only update every minute so no need to check more often
+        time.sleep(1.0)  # Logs only update every minute so no need to check more often
 
 
 if __name__ == "__main__":
+    print(f"Version: {__VERSION__}")
+
     alive = check_alive()
     if not alive:
         raise Exception("Server seems dead.")

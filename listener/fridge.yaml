@@ -4,6 +4,7 @@
 # DATE will be replaced with the current date
 
 fridge: "queenie"
+logdir: "C:\Users\LabUser\Desktop\Logs"
 
 temperatures:
   T1:

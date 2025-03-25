@@ -7,6 +7,6 @@ set PATH=%PATH%;C:\Users\z5653624\AppData\Local\anaconda3\Scripts
 
 call activate thermometry
 
-pyinstaller.exe listener.py
+pyinstaller.exe -F listener.py
 
 call conda deactivate

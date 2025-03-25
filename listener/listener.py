@@ -2,7 +2,7 @@
 # Copied and pasted onto the fridge PCs.
 # For an up-to-date version, check the repository on GitHub : https://github.com/jrzingel/fqt-thermometry
 
-__VERSION__ = 1.0
+__VERSION__ = 1.1
 
 import os
 import requests
@@ -13,7 +13,8 @@ import time
 from requests.exceptions import HTTPError
 
 
-SERVER_LOCATION = "129.94.115.104"
+#SERVER_LOCATION = "129.94.115.10"
+SERVER_LOCATION = "localhost:5000"
 CONFIG_FILE = os.path.join(os.getcwd(), "fridge.yaml")
 
 
@@ -21,18 +22,27 @@ def check_alive():
     """Ping the server and check that it is alive"""
     url = f"http://{SERVER_LOCATION}/api/v1/ping"
     try:
-        response = requests.get(url)
-    except HTTPError as e:
-        print(f"Error occurred when connecting to the server: {e}")
+        response = requests.get(url, timeout=10.0)
+    except Exception as e:
         return False
     if response.status_code != 200:
-        print("Failed to connect to the server")
         return False
     return True
 
 
+def wait_for_server():
+    """Wait until the server is alive. Could be indefinitely if something is ill configured"""
+    print("Waiting for the server to come online", end="")
+    while not check_alive():
+        print(".", end="")
+        time.sleep(5.0)
+    print(" ONLINE")
+
+
+
 def upload_reading(timestamp: datetime, fridge: str, sensor: str, reading: float):
     """Given a temperature reading, upload it to the API"""
+    print(f"{timestamp.isoformat()}: {sensor} == {reading}", end=" ")
     req = requests.post(
         f"http://{SERVER_LOCATION}/api/v1/new",
         json={
@@ -45,16 +55,17 @@ def upload_reading(timestamp: datetime, fridge: str, sensor: str, reading: float
     )
 
     if req.status_code != 200:
-        print(f"Error {req.status_code} occurred when uploading to the server: {req.json()}")
+        print(f"\nError {req.status_code} occurred when uploading to the server: {req.json()}")
     else:
-        print(f"Successfully uploaded {req.json()}")
+        print(f" | Upload {req.json()}")
+    time.sleep(0.1)  # Don't spam the server
 
 
 def watch_X_file(path: str, last_position: int = 0):
     """Return the next line if available"""
-    while not os.path.exists(path):
-        print(f"Waiting for {path} to become available...")
-        time.sleep(10.0)
+    if not os.path.exists(path):
+        print(f"File {path} does not exist. Skipping...")
+        return None, last_position
 
     with open(path, "r") as f:
         f.seek(last_position)
@@ -73,14 +84,16 @@ def get_file_position(positions: dict, sensor_name: str):
     return positions, positions[sensor_name]
 
 
+def format_time(times: list):
+    """Format the time strings as a datetime object in UTC time"""
+    local_time = datetime.strptime(','.join(times), "%d-%m-%y,%H:%M:%S").astimezone(tz=ZoneInfo("Australia/Sydney"))  # in local time
+    return local_time.astimezone(ZoneInfo("UTC"))
+
+
 def listen():
     """Listen for new readings by watching the log files"""
-    global run
-
     if not os.path.exists(CONFIG_FILE):
         print(f"Config file '{CONFIG_FILE}' does not exist. Make sure that this file exists, and then try again.")
-        time.sleep(10.0)
-        run = False
         return
 
     with open(CONFIG_FILE, "r") as f:
@@ -88,8 +101,6 @@ def listen():
             config = yaml.safe_load(f)
         except yaml.YAMLError as e:
             print(f"Failed to load configuration file: {e}")
-            time.sleep(10.0)
-            run = False
             return
 
     fridge = config["fridge"]
@@ -105,6 +116,7 @@ def listen():
 
         # Check if the day changed. If so we must move to new file positions
         if today != last_day:
+            print("New day. Resetting file positions")
             file_positions = {}
             last_day = today
             time.sleep(60.0)  # just wait to make sure the log files exist
@@ -119,39 +131,37 @@ def listen():
             if line: # Something new. Upload it!
                 # Must parse the string
                 splits = line.strip().split(",")
-                local_time = datetime.strptime(','.join(splits[0:2]), "%d-%m-%y,%H:%M:%S").astimezone(tz=ZoneInfo("Australia/Sydney"))  # in local time
-                utc_time = local_time.astimezone(ZoneInfo("UTC"))
                 reading = float(splits[2])
-                print(temp_sensor, utc_time.isoformat(), reading)
-                upload_reading(utc_time, fridge, params["sensor"], reading)  # Only upload the UTC time
-                time.sleep(0.1)  # don't overload the server
+                upload_reading(format_time(splits[0:2]), fridge, params["sensor"], reading)  # Only upload the UTC time
+
+        # Upload maxigauge pressures
+        file_positions, pos = get_file_position(file_positions, "maxigauge")
+        file_path = os.path.join(logdir, today, config["maxigauge"].replace("DATE", today))
+        line, new_pos = watch_X_file(file_path, pos)
+        file_positions["maxigauge"] = new_pos
+        if line:
+            # Parse the string and only upload ACTIVE pressure sensor readings
+            splits = line.strip().split(",")
+            if len(splits) == 39:  # 2 timestamps + 6 sensors * 6 values + 1 end
+                for i in range(6):
+                    if int(splits[2 + 6*i + 2]) == 1:  # Only upload active sensors
+                        upload_reading(format_time(splits[0:2]), fridge, f"P{i+1}", float(splits[2 + 6*i + 3]))
+            else:
+                print("Maxigauge log file has an unexpected number of columns. Skipping...")
 
         time.sleep(1.0)  # Logs only update every minute so no need to check more often
+
 
 
 if __name__ == "__main__":
     print(f"Version: {__VERSION__}")
 
-    alive = check_alive()
-    if not alive:
-        raise Exception("Server seems dead.")
-    print("Server ONLINE.")
+    wait_for_server()
 
-    run = True
-    while run:
-        try:
-            listen()
-        except Exception as e:
-            print(e)
+    listen()
 
-            # Try debug
-            while not check_alive():  # server went, down. Wait for it to come back up
-                print("Waiting for server to become available...")
-                time.sleep(60.0)
-
-            print("Server alive, retrying listener...")
-
-
-
+    # If we get here, something went wrong
+    time.sleep(10.0)  # enough time to read the error
+    print("Exiting...")
 
 

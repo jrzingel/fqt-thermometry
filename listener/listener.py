@@ -10,10 +10,9 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 import yaml
 import time
-from requests.exceptions import HTTPError
 
 
-#SERVER_LOCATION = "129.94.115.10"
+#SERVER_LOCATION = "129.94.115.104"
 SERVER_LOCATION = "localhost:5000"
 CONFIG_FILE = os.path.join(os.getcwd(), "fridge.yaml")
 
@@ -23,7 +22,7 @@ def check_alive():
     url = f"http://{SERVER_LOCATION}/api/v1/ping"
     try:
         response = requests.get(url, timeout=10.0)
-    except Exception as e:
+    except requests.exceptions.RequestException as e:
         return False
     if response.status_code != 200:
         return False
@@ -43,16 +42,24 @@ def wait_for_server():
 def upload_reading(timestamp: datetime, fridge: str, sensor: str, reading: float):
     """Given a temperature reading, upload it to the API"""
     print(f"{timestamp.isoformat()}: {sensor} == {reading}", end=" ")
-    req = requests.post(
-        f"http://{SERVER_LOCATION}/api/v1/new",
-        json={
-            "timestamp": timestamp.isoformat(),
-            "fridge": fridge,
-            "sensor": sensor,
-            "temp": reading,
-        },
-        timeout=10
-    )
+    data = {
+        "timestamp": timestamp.isoformat(),
+        "fridge": fridge,
+        "sensor": sensor,
+        "temp": reading,
+    }
+    try:
+        req = requests.post(
+            f"http://{SERVER_LOCATION}/api/v1/new",
+            json=data, timeout=10
+        )
+    except requests.exceptions.RequestException as e:
+        print(f"\nServer not responding {e.request}")
+        wait_for_server()
+        req = requests.post(
+            f"http://{SERVER_LOCATION}/api/v1/new",
+            json=data, timeout=10
+        )
 
     if req.status_code != 200:
         print(f"\nError {req.status_code} occurred when uploading to the server: {req.json()}")

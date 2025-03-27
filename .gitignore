@@ -3,3 +3,4 @@ instance/
 build/
 dist/
 __pycache__/
+.run/

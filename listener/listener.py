@@ -7,7 +7,7 @@ __VERSION__ = 1.1
 import os
 import requests
 from datetime import datetime
-from zoneinfo import ZoneInfo
+from dateutil import tz
 import yaml
 import time
 
@@ -93,8 +93,8 @@ def get_file_position(positions: dict, sensor_name: str):
 
 def format_time(times: list):
     """Format the time strings as a datetime object in UTC time"""
-    local_time = datetime.strptime(','.join(times), "%d-%m-%y,%H:%M:%S").astimezone(tz=ZoneInfo("Australia/Sydney"))  # in local time
-    return local_time.astimezone(ZoneInfo("UTC"))
+    local_time = datetime.strptime(','.join(times), "%d-%m-%y,%H:%M:%S").astimezone(tz=tz.gettz("Australia/Sydney"))  # in local time
+    return local_time.astimezone(tz.UTC)
 
 
 def listen():

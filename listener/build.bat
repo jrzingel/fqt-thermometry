@@ -5,8 +5,8 @@ del listener.spec
 
 set PATH=%PATH%;C:\Users\z5653624\AppData\Local\anaconda3\Scripts
 
-call activate thermometry
+call activate thermometry-3-8
 
-pyinstaller.exe -F listener.py
+pyinstaller.exe -c -F listener.py
 
 call conda deactivate

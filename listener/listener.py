@@ -2,7 +2,7 @@
 # Copied and pasted onto the fridge PCs.
 # For an up-to-date version, check the repository on GitHub : https://github.com/jrzingel/fqt-thermometry
 
-__VERSION__ = 1.1
+__VERSION__ = 1.2
 
 import os
 import requests
@@ -12,8 +12,8 @@ import yaml
 import time
 
 
-#SERVER_LOCATION = "129.94.115.104"
-SERVER_LOCATION = "localhost:5000"
+SERVER_LOCATION = "129.94.115.104"
+#SERVER_LOCATION = "localhost:5000"
 CONFIG_FILE = os.path.join(os.getcwd(), "fridge.yaml")
 
 

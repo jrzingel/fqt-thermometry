@@ -165,7 +165,7 @@ def getRangeOfReadings(json_data: dict):
 @bp.output(MultipleFridgeResponseSchema)
 @bp.doc(summary="Get all readings from multiple fridges for given sensors between two timestamps")
 def getMultipleFridgeReadings(json_data: dict):
-    """Get a range of readings between two timestamps for a given sensor on each fridge."""
+    """Get a range of readings between two timestamps for a given sensor on each fridge. Truncate the seconds."""
     db = get_db()
 
     # Sanity checks of the input
@@ -196,7 +196,7 @@ def getMultipleFridgeReadings(json_data: dict):
 
         for row in reading_rows:
             r = dict(row)
-            timestamps.append(r["timestamp"])
+            timestamps.append(r["timestamp"].replace(second=0, microsecond=0))
             readings.append(r["temp"])
 
         df = pd.DataFrame({

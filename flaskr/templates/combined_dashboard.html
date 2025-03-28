@@ -42,6 +42,12 @@ function setupPlots(num_plots) {
         },
         cursor: cursorOpts,
         series: seriesOpts,
+        scales: {
+            y: {
+                distr: 3,
+                range: [0.001, 1000]
+            }
+        }
     }
 
     let uplot_main = new uPlot(opts_main, data, document.getElementById("graphs"));

@@ -65,7 +65,7 @@ def create_dummy_data():
             )
         for sensor in ["P1", "P2", "P3", "P4", "P5"]:
             offset = datetime.now(UTC).timestamp()
-            x = np.linspace(offset - 12*60*60, offset, n)
+            x = np.linspace(offset - 7*24*60*60, offset, n)
             timestamps = [datetime.fromtimestamp(i) for i in x]
             n = 100
             # Gaussian noise data

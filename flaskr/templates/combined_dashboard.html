@@ -47,7 +47,11 @@ function setupPlots(num_plots) {
                 distr: 3,
                 range: [0.001, 1000]
             }
-        }
+        },
+        axes: [
+            { grid: {show: true} },
+            { grid: {show: false} },
+        ],
     }
 
     let uplot_main = new uPlot(opts_main, data, document.getElementById("graphs"));

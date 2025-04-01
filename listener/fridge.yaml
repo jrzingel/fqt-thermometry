@@ -3,10 +3,8 @@
 
 # DATE will be replaced with the current date
 
-fridge: "fridge"
-#logdir: "C:\Users\LabUser\Desktop\Logs"
-logdir: "C:\\Users\\z5653624\\OneDrive - UNSW\\phd\\gits\\thermometry\\listener"
-
+fridge: "venus"
+logdir: "C:\\Users\\LabUser\\Desktop\\Logs"
 maxigauge: "maxigauge DATE.log"
 
 temperatures:

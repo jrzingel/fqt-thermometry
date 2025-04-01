@@ -79,15 +79,15 @@ def ping():
     return {"response": "pong"}
 
 
-@bp.post("/v1/latest")
-@bp.input(LatestReadingSchema)
+@bp.get("/v1/latest")
+@bp.input(LatestReadingSchema, location="query")
 @bp.output(ReadingSchema)
 @bp.doc(summary="Get the latest reading for a particular sensor")
-def getLatestReading(json_data: dict):
+def getLatestReading(query_data: dict):
     """Get the latest reading of the given sensor."""
     db = get_db()
     temp_row = db.execute(
-        'SELECT * FROM temperatures WHERE fridge = ? AND sensor = ? ORDER BY timestamp DESC', (json_data["fridge"], json_data["sensor"])
+        'SELECT * FROM temperatures WHERE fridge = ? AND sensor = ? ORDER BY timestamp DESC', (query_data["fridge"], query_data["sensor"])
     ).fetchone()
 
     if temp_row is None:

@@ -48,8 +48,9 @@ function now() {
 
 async function fetchFromAPI(server, fridge, sensors) {
     // Query the API for fridge sensor data
-    const startTime = document.getElementById("startTime").value;
-    const endTime = new Date().toISOString().slice(0, 16);
+    const startTime = new Date(document.getElementById("startTime").value).toISOString();
+    const endTime = new Date().toISOString();
+    console.log(endTime);
     const requestData = {
         earliest_timestamp: startTime,
         latest_timestamp: endTime,

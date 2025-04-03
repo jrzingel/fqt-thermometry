@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FQT Lab Thermometry</title>
+    <title>FQT Status</title>
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
@@ -32,9 +32,9 @@
                     <li><a href="?fridge=queenie" class="block p-2 hover:bg-gray-700 rounded {% if fridge == 'queenie' %}bg-gray-700{% endif %}">Queenie</a></li>
                     <li><a href="?fridge=scarlett" class="block p-2 hover:bg-gray-700 rounded {% if fridge == 'scarlett' %}bg-gray-700{% endif %}">Scarlett</a></li>
                     <li><a href="?fridge=tallulah" class="block p-2 hover:bg-gray-700 rounded {% if fridge == 'tallulah' %}bg-gray-700{% endif %}">Tallulah</a></li>
-                    <li><a href="?fridge=ursula" class="block p-2 hover:bg-gray-700 rounded {% if fridge == 'ursula' %}bg-gray-700{% endif %}">Ursula</a></li>
-                    <li><a href="?fridge=venus" class="block p-2 hover:bg-gray-700 rounded {% if fridge == 'venus' %}bg-gray-700{% endif %}">Venus</a></li>
-                    <li><a href="?fridge=winona" class="block p-2 hover:bg-gray-700 rounded {% if fridge == 'winona' %}bg-gray-700{% endif %}">Winona</a></li>
+                    <li><a href="?fridge=ursula" class="block p-2 hover:bg-gray-700 rounded line-through {% if fridge == 'ursula' %}bg-gray-700{% endif %}">Ursula</a></li>
+                    <li><a href="?fridge=venus" class="block p-2 hover:bg-gray-700 rounded line-through {% if fridge == 'venus' %}bg-gray-700{% endif %}">Venus</a></li>
+                    <li><a href="?fridge=winona" class="block p-2 hover:bg-gray-700 rounded line-through {% if fridge == 'winona' %}bg-gray-700{% endif %}">Winona</a></li>
                 </ul>
                 <div class="mt-auto">
                     <a href="/docs" class="block bg-blue-600 text-white px-4 py-2 rounded-md shadow hover:bg-blue-700 text-center w-full">

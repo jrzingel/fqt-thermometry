@@ -2,6 +2,8 @@
 (Must be on UNSW VPN)
 
 ## TODO
+- Change date selector to instead be 1 DAY, 3 DAY, 7 DAYS
+
 - Add a secret key required to add new logs to the dashboard (prevent incorrect readings)
 - Adjust HTML/CSS to work on mobile (low priority)
 - Add all the fridges

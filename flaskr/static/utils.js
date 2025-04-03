@@ -13,11 +13,22 @@ function setDefaultTimestamps() {
     document.getElementById("startTime").value = sevenDaysAgo.toISOString().slice(0, 16);
 }
 
-function getSize(div_w=1.0, div_h=1.0, min_width=0, max_height=Infinity) {
-    let w = document.getElementById("workspace").offsetWidth;  // Scale everything based on this
-    return {
-        width: Math.max(w * 0.97 / div_w, min_width),
-        height: Math.min(w * 0.3 / div_h, max_height)
+function getSize(single=true) {
+    let w = document.getElementById("workspace").clientWidth;  // Scale everything based on this
+
+    // System that determines if the plots are two columns or single column
+    if (single || w < 700) {
+        // Single column
+        return {
+            width: w * 0.97,
+            height: w * 0.3
+        }
+    } else {
+        // Double column
+        return {
+            width: w * 0.97 * 0.5 * 0.95,
+            height: Math.min(w * 0.25, 200)
+        }
     }
 }
 

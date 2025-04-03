@@ -22,7 +22,7 @@
     </div>
 </div>
 
-<div id="graphs"></div>
+<div id="graphs" ></div>
 <script src="{{ url_for('static', filename='utils.js') }}"></script>
 
 <script>
@@ -107,7 +107,7 @@ function setupPlots(num_plots) {
         // Plot [data[0] (timestamps), data[i] (sensor data)]
         let opts = {
             {#title: "Sensor " + SENSORS[i],#}
-            ...getSize(2.1, 1.5, 600, 200),
+            ...getSize(false),
             focus: {
                 alpha: 0.3,
             },
@@ -131,7 +131,7 @@ function setupPlots(num_plots) {
     window.addEventListener("resize", function() {
         uplot_main.setSize(getSize());
         for (let uplot of uplots) {
-            uplot.setSize(getSize(2.01));
+            uplot.setSize(getSize(false));
         }
     });
 

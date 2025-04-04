@@ -148,22 +148,22 @@ function go() {
     status.textContent = "Rendering charts...";
     let plots = setupPlots(SENSORS.length);
 
-    function refreshData() {
+    function refreshData(first_run=false) {
         status.textContent = "Fetching data..."
         fetchFromAPI("{{ url }}", FRIDGE, SENSORS)
             .then(packed => {
                 let data = prepData(packed, SENSORS);
 
-                console.log(packed);
-                console.log(data);
+                //console.log(packed);
+                //console.log(data);
 
-                plots[0].setData(data);
+                plots[0].setData(data, resetScales=first_run);
                 for (let i = 0; i < SENSORS.length; i++) {
                     let pI = SUBPLOT_ORDER[i]
-                    plots[1][i].setData([data[0], data[pI+1]]);
+                    plots[1][i].setData([data[0], data[pI+1]], resetScales=first_run);
 
-                    console.log(i, pI,  SENSORS[pI]);
-                    console.log(data[pI+1]);
+                    //console.log(i, pI,  SENSORS[pI]);
+                    //console.log(data[pI+1]);
                 }
                 status.textContent = "";
             })
@@ -173,7 +173,7 @@ function go() {
             });
     }
 
-    refreshData();
+    refreshData(true);
     setInterval(refreshData, 30_000);
 
     // Dynamically update the data when required

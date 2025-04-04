@@ -5,10 +5,10 @@ function capitalize(s) {
     return s && String(s[0]).toUpperCase() + String(s).slice(1);
 }
 
-// On the page load, get the last 7 days of data
+// On the page load, get the last day of data
 function setDefaultTimestamps() {
     const now = new Date();
-    const sevenDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(now.getTime() - now.getTimezoneOffset()*60*1000 - 24*60*60*1000);
 
     document.getElementById("startTime").value = sevenDaysAgo.toISOString().slice(0, 16);
 }
@@ -50,7 +50,7 @@ async function fetchFromAPI(server, fridge, sensors) {
     // Query the API for fridge sensor data
     const startTime = new Date(document.getElementById("startTime").value).toISOString();
     const endTime = new Date().toISOString();
-    console.log(endTime);
+    
     const requestData = {
         earliest_timestamp: startTime,
         latest_timestamp: endTime,

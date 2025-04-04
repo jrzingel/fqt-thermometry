@@ -71,12 +71,12 @@ function go() {
     status.textContent = "Rendering charts...";
     let plot = setupPlots(FRIDGES.length);
 
-    function refreshData() {
+    function refreshData(first_run=false) {
         status.textContent = "Fetching data...";
         fetchFridgesFromAPI("{{ url }}", FRIDGES)
             .then(packed => {
                 let data = prepData(packed, FRIDGE_KEYS);
-                plot.setData(data);
+                plot.setData(data, resetScales=first_run);
                 status.textContent = "";
             })
             .catch((error) => {
@@ -85,7 +85,7 @@ function go() {
             });
     }
 
-    refreshData();
+    refreshData(true);
     setInterval(refreshData, 30_000);
 }
 

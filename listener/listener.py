@@ -2,7 +2,7 @@
 # Copied and pasted onto the fridge PCs.
 # For an up-to-date version, check the repository on GitHub : https://github.com/jrzingel/fqt-thermometry
 
-__VERSION__ = 1.2
+__VERSION__ = 1.3
 
 import os
 import requests
@@ -155,6 +155,21 @@ def listen():
                         upload_reading(format_time(splits[0:2]), fridge, f"P{i+1}", float(splits[2 + 6*i + 3]))
             else:
                 print("Maxigauge log file has an unexpected number of columns. Skipping...")
+
+        if "status" in config.keys():
+            # Check if the compressor (pulse tube) is running
+            file_positions, pos = get_file_position(file_positions, "status")
+            file_path = os.path.join(logdir, today, config["status"].replace("DATE", today))
+            line, new_pos = watch_X_file(file_path, pos)
+            file_positions["status"] = new_pos
+            if line:
+                # Parse the string and only upload ACTIVE pressure sensor readings
+                splits = line.strip().split(",")
+                if len(splits) == 74:
+                    upload_reading(format_time(splits[0:2]), fridge, "pulse_on", float(splits[21]))
+                else:
+                    print("Status log file has an unexpected number of columns. Skipping...")
+
 
         time.sleep(1.0)  # Logs only update every minute so no need to check more often
 

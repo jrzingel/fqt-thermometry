@@ -6,6 +6,7 @@
 fridge: "venus"
 logdir: "C:\\Users\\LabUser\\Desktop\\Logs"
 maxigauge: "maxigauge DATE.log"
+status: "status DATE.log"
 
 temperatures:
   T1:

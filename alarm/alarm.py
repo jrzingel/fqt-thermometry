@@ -5,6 +5,7 @@
 import sqlite3
 import urllib3
 import json
+import time
 import schedule
 import os
 
@@ -24,6 +25,7 @@ def get_pulse_status(db):
     ).fetchone()
 
     if temp_row is None:
+        print("No reading found")
         return False, None
 
     temp_row = dict(temp_row)
@@ -64,7 +66,7 @@ def generate_payload(db_row):
                             "type": "TextBlock",
                             "size": "medium",
                             "weight": "bolder",
-                            "text": "ALARM - VENUS PULUSE TUBE OFF",
+                            "text": "ALARM - VENUS PULSE TUBE OFF",
                             "style": "heading",
                             "wrap": True,
                         },
@@ -87,6 +89,8 @@ def check_and_alert():
     if status is False:
         print("ALERT: SENDING ALARM")
         send_alarm(generate_payload(row))
+    else:
+        print(f"{time.time()} all ok")
 
 
 def test_alert():
@@ -95,5 +99,9 @@ def test_alert():
         send_alarm(generate_payload("TEST MESSAGE ONLY."))
 
 
-schedule.every(1).second.do(check_and_alert)
-schedule.every(1).second.do(test_alert)
+schedule.every(20).seconds.do(check_and_alert)
+schedule.every(20).seconds.do(test_alert)
+
+while True:
+    schedule.run_pending()
+    time.sleep(1)

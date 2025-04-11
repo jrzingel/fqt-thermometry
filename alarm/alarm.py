@@ -10,29 +10,29 @@ import schedule
 import os
 
 
-DATABASE = os.path.join(os.path.dirname(os.getcwd()), "instance", "flaskr.sqlite")   # database path
+API_URL = "localhost"  # server URL
 TEST_FILE = "testfile.txt"
 HOOKURL = "https://prod-07.australiasoutheast.logic.azure.com:443/workflows/b5d694e856d64fc69cd9ae8e73e8eec2/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=9-Hit9weCVmOG6T0HQuGn1_412lr1ZT8uOrcqX5bvyc"
 
 http = urllib3.PoolManager()
 
 
-def get_pulse_status(db):
+def get_pulse_status():
     # Return if Venus pulse tube is on
-    temp_row = db.execute(
-    'SELECT * FROM temperatures WHERE fridge = ? AND SENSOR = ? ORDER BY timestamp DESC LIMIT 1',
-        ("venus", "pulse_on")
-    ).fetchone()
-
-    if temp_row is None:
-        print("No reading found")
-        return False, None
-
-    temp_row = dict(temp_row)
-    if temp_row["temp"] == 0.0:
-        return False, None
-    else:
-        return True, temp_row["temp"]
+    r = http.request(
+        'GET',
+        API_URL + "/api/v1/latest?fridge=venus&sensor=pulse_on",
+        headers={"Content-Type": "application/json"},
+        timeout=10
+    )
+    if r.status < 300:
+        try:
+            reading = json.loads(r.data.decode('utf-8'))
+            return bool(reading["temp"]), reading["timestamp"]
+        except Exception as e:
+            print(f"failed {e}")
+            return False, None
+    return False, None
 
 
 def send_alarm(payload):
@@ -84,24 +84,19 @@ def generate_payload(db_row):
 
 def check_and_alert():
     # Function to call and run!
-    db = sqlite3.connect(DATABASE, detect_types=sqlite3.PARSE_DECLTYPES)
-    status, row = get_pulse_status(db)
+    status, timestamp = get_pulse_status()
     if status is False:
-        print("ALERT: SENDING ALARM")
-        send_alarm(generate_payload(row))
+        print(f"ALERT: SENDING ALARM ({timestamp})")
+        send_alarm(generate_payload(time))
     else:
-        print(f"{time.time()} all ok")
+        print(f"{time.time()} all ok ({timestamp})")
 
 
-def test_alert():
-    # IF a file exists, send the alert
-    if os.path.isfile(TEST_FILE):
-        send_alarm(generate_payload("TEST MESSAGE ONLY."))
+schedule.every(60).seconds.do(check_and_alert)
 
 
-schedule.every(20).seconds.do(check_and_alert)
-schedule.every(20).seconds.do(test_alert)
-
+send_alarm(generate_payload("Launching alarm script"))
 while True:
     schedule.run_pending()
+    #print(get_pulse_status())
     time.sleep(1)

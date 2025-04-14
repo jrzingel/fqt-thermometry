@@ -1,0 +1,9 @@
+# Config file for which alerts to associate with each fridge
+
+
+alerts:
+  PulseTubeAlert:  # requires modern bluefors software
+    - venus
+
+  #OilTempAlert:
+    #- venus

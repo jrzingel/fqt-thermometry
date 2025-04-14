@@ -139,7 +139,8 @@ def listen():
                 # Must parse the string
                 splits = line.strip().split(",")
                 reading = float(splits[2])
-                upload_reading(format_time(splits[0:2]), fridge, params["sensor"], reading)  # Only upload the UTC time
+                if reading != 0.0:  # Temperatures can never be 0K (means the sensor is disabled)
+                    upload_reading(format_time(splits[0:2]), fridge, params["sensor"], reading)  # Only upload the UTC time
 
         # Upload maxigauge pressures
         file_positions, pos = get_file_position(file_positions, "maxigauge")

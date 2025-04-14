@@ -10,7 +10,7 @@ class Alert(object):
         self.api_url = api_url
         self.fridge = fridge
 
-        self.active = True  # Once triggered we do not check again for an hour
+        self.active = False  # Default to not being enabled (must be not in alarm state to enable, assume fridges nominal)
         self.last_triggered = None
 
     def _get_latest(self, sensor) -> {}:

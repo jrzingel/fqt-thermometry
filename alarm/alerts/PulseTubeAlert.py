@@ -14,7 +14,7 @@ class PulseTubeAlert(Alert):
                 return False
 
         self.activate()
-        return True  # Default to alarm state
+        return True  # Default to alarm state (also if no data exists)
 
     @override
     def try_enable(self):

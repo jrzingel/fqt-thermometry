@@ -46,6 +46,7 @@ class Alert(object):
 
     def activate(self):
         """Activate the alarm"""
+        print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} ({self.fridge}) is in alarm! Sending alert")
         self.active = False
         self.last_triggered = datetime.now()
 

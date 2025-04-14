@@ -38,7 +38,7 @@ class Watchtower:
     def _format_message(title: str, fridge: str, message: str) -> str:
         """Format the alert to a consistent style"""
         time = datetime.now().strftime("%a %d.%m.%Y, %H:%M:%S")
-        return f"<blockquote>[{time}] @ {fridge.capitalize()}</blockquote> <h1><strong>{title}</strong>🔔</h1>\n \n \n{message}\n \n See more <a href='http://status.fqt.unsw.edu.au/dashboard?fridge={fridge}'>here</a>"
+        return f"<blockquote>[{time}] @ {fridge.capitalize()}</blockquote> <h1><strong>{title}</strong>🔔</h1>\n \n \n{message}\n \n See more <a href='http://status.fqt.unsw.edu.au/dashboard?fridge={fridge}'>here</a>."
 
     def send_message(self, message: str):
         """Send the message to teams"""
@@ -55,6 +55,7 @@ class Watchtower:
 
     def lookout(self):
         """Check if any alert is in alarm"""
+        #print(f"\rUpdated @ [{datetime.now().isoformat()}]", end="")
         for alert in self.alerts:
             if alert.active:
                 if alert.is_in_alarm():
@@ -73,7 +74,8 @@ if __name__ == "__main__":
     watch = Watchtower(test_webhook, fridge_api)
     watch.load_config("config.yaml")
 
-    schedule.every(1).minute.do(watch.lookout)
+    #schedule.every(1).minute.do(watch.lookout)
+    schedule.every(10).seconds.do(watch.lookout)
 
     while True:
         schedule.run_pending()

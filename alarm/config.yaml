@@ -5,5 +5,12 @@ alerts:
   PulseTubeAlert:  # requires modern bluefors software
     - venus
 
+  MxcAbove1K:
+    - queenie
+    - scarlett
+    - tallulah
+    - venus
+    - winona
+
   #OilTempAlert:
     #- venus

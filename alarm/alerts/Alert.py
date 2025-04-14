@@ -35,20 +35,38 @@ class Alert(object):
         if self.active is False:
             if self.last_triggered is None:
                 self.active = True
+                print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} ({self.fridge}) re-enabling.")
             elif datetime.now() > (self.last_triggered + timedelta(hours=cooldown)):
                 self.active = True
+                print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} ({self.fridge}) re-enabling.")
+
 
     def enable_if_cold(self):
         """Re-enable the alarm if it is no longer in a state of alarm"""
         if self.active is False:
             if not self.is_in_alarm():
                 self.active = True
+                print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} ({self.fridge}) re-enabling.")
+
+    def enable_after_delay_and_cold(self, cooldown=1):
+        """Re-enable the alarm if it is both cold and a delay has passed"""
+        if self.active is False:
+            if self.last_triggered is None:
+                if not self.is_in_alarm():
+                    self.active = True
+                    print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} ({self.fridge}) re-enabling.")
+            elif datetime.now() > (self.last_triggered + timedelta(hours=cooldown)):
+                if not self.is_in_alarm():
+                    self.active = True
+                    print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} ({self.fridge}) re-enabling.")
+
 
     def activate(self):
         """Activate the alarm"""
-        print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} ({self.fridge}) is in alarm! Sending alert")
-        self.active = False
-        self.last_triggered = datetime.now()
+        if self.active:
+            print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} ({self.fridge}) is in alarm! Sending alert")
+            self.active = False
+            self.last_triggered = datetime.now()
 
     def try_enable(self):
         """Try to re-enable the alarm. Make sure that alarm spam doesn't exist"""

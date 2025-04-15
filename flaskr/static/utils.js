@@ -6,11 +6,11 @@ function capitalize(s) {
 }
 
 // On the page load, get the last day of data
-function setDefaultTimestamps() {
+function setDefaultTimestamps(hours_ago=24) {
     const now = new Date();
-    const sevenDaysAgo = new Date(now.getTime() - now.getTimezoneOffset()*60*1000 - 24*60*60*1000);
+    const timeAgo = new Date(now.getTime() - now.getTimezoneOffset()*60*1000 - hours_ago*60*60*1000);
 
-    document.getElementById("startTime").value = sevenDaysAgo.toISOString().slice(0, 16);
+    document.getElementById("startTime").value = timeAgo.toISOString().slice(0, 16);
 }
 
 function getSize(single=true) {

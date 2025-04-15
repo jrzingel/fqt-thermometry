@@ -18,9 +18,16 @@
             <label for="startTime" class="block text-sm font-medium text-gray-700">Time from:</label>
             <h2 id="status">Loading page</h2>
         </div>
-        <div class="flex justify-between items-center space-x-2">
-            <input type="datetime-local" id="startTime" class="mt-1 block w-full p-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-            <button id="goButton" class="block bg-blue-600 text-white px-2 py-2 rounded-md shadow hover:bg-blue-700 text-center">Go</button>
+        <div class="flex items-center space-x-2 mt-2">
+            <input type="datetime-local" id="startTime" class="flex-grow min-w-0 p-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            <button id="goButton" class="bg-blue-600 text-white px-2 py-2 rounded-md shadow hover:bg-blue-700 text-center">Go</button>
+        </div>
+        <div class="flex justify-between items-center gap-2 p-1 mt-2 rounded-md bg-gray-100">
+            <button id="1" class="timeButton w-12 h-6 bg-gray-100 rounded-md hover:bg-gray-200 text-center">1H</button>
+            <button id="3" class="timeButton w-12 h-6 bg-gray-100 rounded-md hover:bg-gray-200 text-center">3H</button>
+            <button id="12" class="timeButton w-12 h-6 bg-gray-100 rounded-md hover:bg-gray-200 text-center">12H</button>
+            <button id="24" class="timeButton w-12 h-6 bg-gray-100 rounded-md hover:bg-gray-200 text-center">1D</button>
+            <button id="72" class="timeButton w-12 h-6 bg-gray-100 rounded-md hover:bg-gray-200 text-center">3D</button>
         </div>
     </div>
 </div>
@@ -187,6 +194,17 @@ function go() {
         }
         refreshData(true);
     });
+
+    let buttons = document.getElementsByClassName("timeButton");
+    for (b in buttons) {
+        if (buttons.hasOwnProperty(b)) {
+            buttons[b].addEventListener("click", function() {
+                    setDefaultTimestamps(this.id);
+                    refreshData(true);
+                }
+            )
+        }
+    }
 }
 
 // Specify graphs to plot.

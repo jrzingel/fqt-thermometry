@@ -30,12 +30,12 @@ function setupPlots(num_plots) {
             label: capitalize(FRIDGES[i - 1][0]),
             stroke: COLOURS[i - 1],
             spanGaps: true,
-            value: (u, v) => v == null ? '' : v + " K"
+            value: (u, v) => v == null ? '' : 1000*v + " mK"
         });
     }
 
     const opts_main = {
-        title: "Mixing Chamber Temperatures (K)",
+        title: "Mixing Chamber Temperatures",
         ...getSize(),
         focus: {
             alpha: 0.3,
@@ -76,6 +76,14 @@ function go() {
         fetchFridgesFromAPI("{{ url }}", FRIDGES)
             .then(packed => {
                 let data = prepData(packed, FRIDGE_KEYS);
+
+                // Move from K to mK readings
+                //for (let i = 1; i < data.length; i++) {
+                 //   for (let j = 0; j < data[i].length; j++) {
+                  //      data[i][j] *= 1000;
+                   // }
+                //}
+
                 plot.setData(data, resetScales=first_run);
                 status.textContent = "";
             })

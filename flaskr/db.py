@@ -55,7 +55,7 @@ def create_dummy_data():
             i = 1.0
             for _ in range(n):
                 i += random.gauss(0, 0.1)
-                i = max(0.0, i)
+                i = max(0.01, i)
                 random_values.append(i)
             random_timestamps = [datetime.now(UTC) - timedelta(hours=random.randint(0, 12), minutes=random.randint(0, 59), seconds=random.randint(0, 59)) for _ in range(n)]
             random_timestamps.sort()
@@ -73,7 +73,7 @@ def create_dummy_data():
             i = 500.0
             for _ in range(n):
                 i += random.gauss(0, 10)
-                i = max(0.0, i)
+                i = max(0.01, i)
                 random_values.append(i)
             tuples = [(t, fridge, sensor, te) for t, te in zip(random_timestamps, random_values)]
             db.executemany(

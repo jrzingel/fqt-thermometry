@@ -7,8 +7,6 @@ import numpy as np
 
 from flask import current_app, g
 
-# TODO: Add structure for how long sensor names can be
-# TODO: Check that SQLite isn't truncating the data to 3 sf and not 3 dp
 
 def get_db():
     """Return the current database connection"""

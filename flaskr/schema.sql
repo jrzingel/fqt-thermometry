@@ -1,4 +1,4 @@
--- Old stuff
+-- Old stuff (if migrating)
 DROP TABLE IF EXISTS fridges;
 DROP TABLE IF EXISTS sensors;
 DROP TABLE IF EXISTS pressures;
@@ -8,6 +8,7 @@ DROP TABLE IF EXISTS temperatures;
 DROP TABLE IF EXISTS sensor;
 DROP TABLE IF EXISTS fridge;
 DROP TABLE IF EXISTS measurement;
+DROP TABLE IF EXISTS latest_reading;
 
 -- Fridge table
 CREATE TABLE fridge (
@@ -39,7 +40,7 @@ CREATE TABLE latest_reading (
     time INTEGER NOT NULL,
     reading REAL NOT NULL,
     FOREIGN KEY (sensor_id) REFERENCES sensor(id)
-)
+);
 
 -- Indexes for fast reads
 CREATE UNIQUE INDEX idx_measurement_sensor_time ON measurement(sensor_id, time);

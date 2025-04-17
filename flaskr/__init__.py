@@ -4,7 +4,6 @@ import logging
 logging.getLogger('werkzeug').setLevel(logging.CRITICAL)  # disable werkzeug logging
 
 import os
-import traceback
 from flask import url_for, redirect, request
 import time
 from apiflask import APIFlask
@@ -23,9 +22,6 @@ def create_app():
         SECRET_KEY="dev",
         DATABASE=os.path.join(app.instance_path, "flaskr.sqlite"),
     )
-
-    # Load config
-    #app.config.from_pyfile("config.py", silent=False)
 
     # Check folders exist
     try:

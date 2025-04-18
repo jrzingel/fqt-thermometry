@@ -6,16 +6,15 @@ import sqlite3
 
 # All API requests should be done using JSON
 
-from flask import g, request
+from flask import g, request, current_app
 from apiflask import APIBlueprint, Schema, abort
 from apiflask.fields import Integer, String, Float, DateTime, Boolean, List, Dict
-from apiflask.validators import OneOf
-import random
-from datetime import datetime
-import math
 import pandas as pd
 import numpy as np
 from functools import reduce
+from datetime import datetime, timezone
+import hmac
+import hashlib
 
 
 from flaskr.db import get_db
@@ -24,22 +23,86 @@ from flaskr.db import get_db
 bp = APIBlueprint("api", __name__, url_prefix="/api")
 
 
-# INPUTS
+# Authorization
+def is_valid_signature(fridge: str, payload: dict, signature: str) -> bool:
+    """Check if the HMAC signature of the message is valid"""
+    secret = current_app.config["FRIDGE_KEYS"].get(fridge)
+    if not secret:
+        return False
+    expected_sig = hmac.new(secret, str(payload).encode(), hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected_sig, signature)
 
-class ReadingSchema(Schema):
-    """Schema for a single reading to upload"""
-    timestamp = DateTime(required=True)
-    temp = Float(required=True)
-    fridge = String(required=True)
-    sensor = String(required=True)
-    #type = String(required=True, validate=OneOf(["temperature", "pressure"]))
+
+def unix_to_iso(unixtime: int) -> str:
+    """Convert from UNIX timestamp to ISO string"""
+    return datetime.fromtimestamp(unixtime).isoformat() + 'Z'
 
 
+@bp.get("/v1/ping")
+@bp.doc(summary="Ping that the API server is active")
+def ping():
+    return {"response": "pong"}
+
+
+# Latest reading
 class LatestReadingSchema(Schema):
     """Schema for returning the latest reading"""
     fridge = String(required=True)
     sensor = String(required=True)
-    #type = String(required=True, validate=OneOf(["temperature", "pressure"]))
+
+
+class SingleReadingSchema(Schema):
+    """Schema for returning a single reading"""
+    time = DateTime(required=True)
+    fridge = String(required=True)
+    sensor = String(required=True)
+    reading = Float(required=True)
+
+
+@bp.get("/v1/latest")
+@bp.input(LatestReadingSchema, location="query")
+@bp.output(SingleReadingSchema)
+@bp.doc(summary="Get the latest reading for a particular sensor. This is the only endpoint that can be used to fetch non-historical readings.")
+def getLatestReading(query_data: dict):
+    """Get the latest reading of a given sensor."""
+    db = get_db()
+    # First, identify which table to use
+    result = db.execute(
+        """
+        SELECT s.id AS sensor_id, s.latest
+        FROM sensor s
+        JOIN fridge f ON f.id = s.fridge_id
+        WHERE s.name = ? AND f.name = ?;""",
+        (query_data["sensor"], query_data["fridge"])
+    ).fetchone()
+
+    if not result:
+        abort(404, f"No sensor {query_data['sensor']} found")
+    sensor_id, latest_only = result
+
+    # Switch based on what table to use
+    if latest_only:
+        result = db.execute("""
+        SELECT lr.time, lr.reading
+        FROM latest_reading lr
+        WHERE lr.sensor_id = ?
+        """, (sensor_id,)).fetchone()
+    else:
+        result = db.execute("""
+        SELECT m.time, m.reading
+        FROM measurement m
+        WHERE m.sensor_id = ?
+        ORDER BY m.time
+        """, (sensor_id,)).fetchone()
+    if result:
+        time, reading = result
+        return {
+            "time": datetime.fromtimestamp(time, timezone.utc),
+            "fridge": query_data["fridge"],
+            "sensor": query_data["sensor"],
+            "reading": reading,
+        }
+    abort(404, f"No data for {query_data['fridge']}.{query_data['sensor']} found")
 
 
 class RangedReadingSchema(Schema):
@@ -49,54 +112,10 @@ class RangedReadingSchema(Schema):
     earliest_timestamp = DateTime(required=False)
     latest_timestamp = DateTime(required=False)
 
-class MultipleFridgeReadingSchema(Schema):
-    """Schema for specifying a sensor from multiple fridges to return"""
-    query = List(List(String()), required=True)  # [[fridge, sensor], ...]
-    earliest_timestamp = DateTime(required=False)
-    latest_timestamp = DateTime(required=False)
-
-
-# OUTPUTS
-
-class DefaultResponseSchema(Schema):
-    success = Boolean(required=True)
-
-
 class RangedResponseSchema(Schema):
     timestamps = List(Integer(), required=True)
     fridge = String(required=True)
     readings = Dict(keys=String(), values=List(Float()), required=True)
-
-
-class MultipleFridgeResponseSchema(Schema):
-    timestamps = List(Integer(), required=True)
-    readings = Dict(keys=String(), values=List(Float()), required=True)  # {fridge.sensor: [readings]}
-
-
-@bp.get("/v1/ping")
-@bp.doc(summary="Ping that the API server is active")
-def ping():
-    return {"response": "pong"}
-
-
-@bp.get("/v1/latest")
-@bp.input(LatestReadingSchema, location="query")
-@bp.output(ReadingSchema)
-@bp.doc(summary="Get the latest reading for a particular sensor")
-def getLatestReading(query_data: dict):
-    """Get the latest reading of the given sensor."""
-    db = get_db()
-    temp_row = db.execute(
-        'SELECT * FROM temperatures WHERE fridge = ? AND sensor = ? ORDER BY timestamp DESC', (query_data["fridge"], query_data["sensor"])
-    ).fetchone()
-
-    if temp_row is None:
-        abort(404, "No readings found")
-
-    temp_row = dict(temp_row)
-    del temp_row["id"]  # Internal use only. Don't expose to users
-    return temp_row
-
 
 # TODO: Add /v1/range/hour to return the latest of the past hour
 @bp.post("/v1/range")
@@ -160,6 +179,17 @@ def getRangeOfReadings(json_data: dict):
     }
 
 
+class MultipleFridgeReadingSchema(Schema):
+    """Schema for specifying a sensor from multiple fridges to return"""
+    query = List(List(String()), required=True)  # [[fridge, sensor], ...]
+    earliest_timestamp = DateTime(required=False)
+    latest_timestamp = DateTime(required=False)
+
+
+class MultipleFridgeResponseSchema(Schema):
+    timestamps = List(Integer(), required=True)
+    readings = Dict(keys=String(), values=List(Float()), required=True)  # {fridge.sensor: [readings]}
+
 @bp.post("/v1/fridges")
 @bp.input(MultipleFridgeReadingSchema)
 @bp.output(MultipleFridgeResponseSchema)
@@ -219,10 +249,16 @@ def getMultipleFridgeReadings(json_data: dict):
         "readings": result.to_dict('list')
     }
 
+class NewReadingSchema(Schema):
+    """Schema for a single reading to upload"""
+    timestamp = DateTime(required=True)
+    temp = Float(required=True)
+    fridge = String(required=True)
+    sensor = String(required=True)
+
 
 @bp.post("/v1/new")
-@bp.input(ReadingSchema)
-@bp.output(DefaultResponseSchema)
+@bp.input(NewReadingSchema)
 @bp.doc(summary="Add a new reading for a given sensor")
 def addReading(json_data: dict):
     """Upload temperature data for a given time from listener.py. Not publicly accessible."""

@@ -30,7 +30,19 @@ def init_db():
     """Initialise the database with the appropriate schema. THIS RESETS ALL DATA STORED."""
     db = get_db()
     with current_app.open_resource('schema.sql', mode='r') as f:
-        db.executescript(f.read())
+        db.executescript(f.read())  # Setup tables
+
+
+def add_fridge(name: str) -> int:
+    """Add a new fridge to the databse"""
+    db = get_db()
+    cursor = db.cursor()
+    result = cursor.execute("""
+        INSERT INTO fridge (name)
+        VALUES (?)
+        """, (name,))
+    db.commit()
+    return cursor.lastrowid
 
 
 def create_dummy_data():
@@ -85,15 +97,20 @@ def init_db_command():
     init_db()
     click.echo('Initialized the database.')
 
+
 @click.command('create-dummy-data')
 def create_dummy_data_command():
     init_db()
     create_dummy_data()
     click.echo('Created dummy data.')
 
-sqlite3.register_converter(
-    'timestamp', lambda v: datetime.fromisoformat(v.decode())
-)
+
+@click.command('add-fridge')
+@click.argument('fridge_name')
+def add_fridge_command(fridge_name):
+    id = add_fridge(fridge_name)
+    click.echo(f"Generated fridge ID = {id}")
+
 
 
 def init_app(app):
@@ -101,3 +118,4 @@ def init_app(app):
     app.teardown_appcontext(close_db)
     app.cli.add_command(init_db_command)
     app.cli.add_command(create_dummy_data_command)
+    app.cli.add_command(add_fridge_command)

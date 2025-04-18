@@ -57,50 +57,53 @@ def add_sensor(name: str, fridge_id: int, latest=0) -> int:
     return cursor.lastrowid
 
 
+def create_default_fridges():
+    """Create the default fridges and associated sensors"""
+    fridges = ["queenie", "scarlett", "tallulah", "ursula", "venus", "winona"]
+    sensors = ["50K", "4K", "magnet", "still", "mxc", "P1", "P2", "P3", "P4", "P5", "P6"]
+    latest_sensors = ["pulse_on", "flow", "oil_temp"]
+    for fridge in fridges:
+        f_id = add_fridge(fridge)
+        for sensor in sensors:
+            add_sensor(sensor, f_id, 0)
+        for sensor in latest_sensors:
+            add_sensor(sensor, f_id, 1)
+
+
 def create_dummy_data():
     """Create some dummy data to test the API with"""
     import random
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     db = get_db()
-    # db.executemany(
-    #     'INSERT INTO fridges (name) VALUES (?)', [("fridge1",), ("fridge2",)]
-    # )
-    # db.executemany(
-    #     'INSERT INTO sensors (fridge, name) VALUES (?, ?) ', [("fridge1", "s1"), ("fridge1", "s2"), ("fridge1", "s3")]
-    # )
-    for fridge in ["queenie", "scarlett", "tallulah", "ursula", "venus"]:
-        for sensor in ["50K", "4K", "magnet", "still", "mxc"]:
-            n = 100
-            # Gaussian noise data
-            random_values = []
-            i = 1.0
-            for _ in range(n):
-                i += random.gauss(0, 0.1)
-                i = max(0.01, i)
-                random_values.append(i)
-            random_timestamps = [datetime.now(UTC) - timedelta(hours=random.randint(0, 12), minutes=random.randint(0, 59), seconds=random.randint(0, 59)) for _ in range(n)]
-            random_timestamps.sort()
-            tuples = [(t, fridge, sensor, te) for t, te in zip(random_timestamps, random_values)]
-            db.executemany(
-                'INSERT INTO temperatures (timestamp, fridge, sensor, temp) VALUES (?, ?, ?, ?)', tuples
-            )
-        for sensor in ["P1", "P2", "P3", "P4", "P5"]:
-            offset = datetime.now(UTC).timestamp()
-            x = np.linspace(offset - 7*24*60*60, offset, n)
-            timestamps = [datetime.fromtimestamp(i) for i in x]
-            n = 100
-            # Gaussian noise data
-            random_values = []
-            i = 500.0
-            for _ in range(n):
-                i += random.gauss(0, 10)
-                i = max(0.01, i)
-                random_values.append(i)
-            tuples = [(t, fridge, sensor, te) for t, te in zip(random_timestamps, random_values)]
-            db.executemany(
-                'INSERT INTO temperatures (timestamp, fridge, sensor, temp) VALUES (?, ?, ?, ?)', tuples
-            )
+    now = int(datetime.now(timezone.utc).timestamp())
+
+    # Do historic data
+    n = 201
+    sensors = db.execute("SELECT id FROM sensor WHERE latest=0").fetchall()
+    times = np.linspace(now - 3 * 24 * 60 * 60, now, n)
+    for _id in sensors:
+        id = _id[0]
+        i = 500.0
+        vals = []
+        for _ in range(n):
+            i += random.gauss(0, 10)
+            i = max(0.01, i)
+            vals.append(i)
+        tuples = [(t, id, r) for t, r in zip(times, vals)]
+        db.executemany(
+            'INSERT INTO measurement (time, sensor_id, reading) VALUES (?, ?, ?)', tuples
+        )
+
+    # Do latest data
+    sensors = db.execute("SELECT id FROM sensor WHERE latest=1").fetchall()
+    for _id in sensors:
+        id = _id[0]
+        val = random.gauss(0, 10)
+        db.execute(
+            'INSERT INTO latest_reading (time, sensor_id, reading) VALUES (?, ?, ?)', (now, id, val)
+        )
+
     db.commit()
 
 
@@ -110,9 +113,17 @@ def init_db_command():
     click.echo('Initialized the database.')
 
 
+@click.command('create-default-fridges')
+def create_default_fridges_command():
+    init_db()
+    create_default_fridges()
+    click.echo('Created default fridges.')
+
+
 @click.command('create-dummy-data')
 def create_dummy_data_command():
     init_db()
+    create_default_fridges()
     create_dummy_data()
     click.echo('Created dummy data.')
 
@@ -133,11 +144,11 @@ def add_sensor_command(sensor_name, fridge_id, latest):
     click.echo(f"Generated sensor ID = {id}")
 
 
-
 def init_app(app):
     """Initialise the app with database knowledge"""
     app.teardown_appcontext(close_db)
     app.cli.add_command(init_db_command)
+    app.cli.add_command(create_default_fridges_command)
     app.cli.add_command(create_dummy_data_command)
     app.cli.add_command(add_fridge_command)
     app.cli.add_command(add_sensor_command)

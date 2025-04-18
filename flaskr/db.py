@@ -34,13 +34,25 @@ def init_db():
 
 
 def add_fridge(name: str) -> int:
-    """Add a new fridge to the databse"""
+    """Add a new fridge to the database"""
     db = get_db()
     cursor = db.cursor()
     result = cursor.execute("""
         INSERT INTO fridge (name)
         VALUES (?)
         """, (name,))
+    db.commit()
+    return cursor.lastrowid
+
+
+def add_sensor(name: str, fridge_id: int, latest=0) -> int:
+    """Add a new sensor to the database"""
+    db = get_db()
+    cursor = db.cursor()
+    result = cursor.execute("""
+        INSERT INTO sensor (name, fridge_id, latest)
+        VALUES (?, ?, ?)
+        """, (name, fridge_id, latest))
     db.commit()
     return cursor.lastrowid
 
@@ -112,6 +124,15 @@ def add_fridge_command(fridge_name):
     click.echo(f"Generated fridge ID = {id}")
 
 
+@click.command('add-sensor')
+@click.argument('sensor_name')
+@click.argument('fridge_id')
+@click.argument('latest', default=0)
+def add_sensor_command(sensor_name, fridge_id, latest):
+    id = add_sensor(sensor_name, fridge_id, latest)
+    click.echo(f"Generated sensor ID = {id}")
+
+
 
 def init_app(app):
     """Initialise the app with database knowledge"""
@@ -119,3 +140,4 @@ def init_app(app):
     app.cli.add_command(init_db_command)
     app.cli.add_command(create_dummy_data_command)
     app.cli.add_command(add_fridge_command)
+    app.cli.add_command(add_sensor_command)

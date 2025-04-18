@@ -3,9 +3,13 @@
 import logging
 logging.getLogger('werkzeug').setLevel(logging.CRITICAL)  # disable werkzeug logging
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import os
 from flask import url_for, redirect, request
 import time
+import json
 from apiflask import APIFlask
 from . import db
 from . import api
@@ -21,6 +25,7 @@ def create_app():
     app.config.from_mapping(
         SECRET_KEY="dev",
         DATABASE=os.path.join(app.instance_path, "flaskr.sqlite"),
+        FRIDGE_KEYS=json.loads(os.getenv("FRIDGE_KEYS")),
     )
 
     # Check folders exist

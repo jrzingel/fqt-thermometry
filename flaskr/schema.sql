@@ -21,7 +21,7 @@ CREATE TABLE sensor (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
     fridge_id INTEGER NOT NULL,
-    latest_only INTEGER NOT NULL DEFAULT 0,  -- Store in 0=measurement, 1=latest_only
+    latest INTEGER NOT NULL DEFAULT 0,  -- Store in 0=measurement, 1=latest_reading
     UNIQUE(name, fridge_id),
     FOREIGN KEY (fridge_id) REFERENCES fridge(id)
 );

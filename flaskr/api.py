@@ -176,13 +176,13 @@ class NewReadingSchema(Schema):
 
 
 # Authorization
-def is_valid_signature(fridge: str, payload: dict, signature: str) -> bool:
-    """Check if the HMAC signature of the message is valid"""
-    secret = current_app.config["FRIDGE_KEYS"].get(fridge)
+def generate_signature(fridge: str, sensor: str, time: int, reading: float) -> str:
+    """Generate the HMAC signautre for a given reading"""
+    secret = current_app.config["FRIDGE_KEYS"].get(fridge).encode()
     if not secret:
-        return False
-    expected_sig = hmac.new(secret, str(payload).encode(), hashlib.sha256).hexdigest()
-    return hmac.compare_digest(expected_sig, signature)
+        return ""
+    return hmac.new(secret, str(fridge + sensor + str(time) + str(reading)).encode(), hashlib.sha256).hexdigest()
+
 
 
 @bp.post("/v1/new")
@@ -193,7 +193,12 @@ def addReading(json_data: dict):
     db = get_db()
     time = int(json_data["time"].timestamp())
 
-    # First, identify which table to use
+    # First, identify if the request is genuine
+    signature = generate_signature(json_data["fridge"], json_data["sensor"], time, json_data["reading"])
+    if not hmac.compare_digest(signature, json_data["signature"]):
+        return abort(401, "Invalid signature. You are not authorized to upload data.")
+
+    # Second, identify which table to use
     result = db.execute(
         """
         SELECT s.id AS sensor_id, s.latest

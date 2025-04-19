@@ -34,7 +34,7 @@ function getSize(single=true) {
 
 function prepData(packed, keys) {
     // Unpack the data into a form uPlot likes
-    let data = [packed["timestamps"]];
+    let data = [packed["times"]];
     for (let key of keys) {
         data.push(packed["readings"][key]);
     }
@@ -43,13 +43,13 @@ function prepData(packed, keys) {
 
 function now() {
     // Get the current UNIX timestamp
-    return new Date().toISOString().slice(0, 16);
+    return new Date().toISOString();
 }
 
 async function fetchFromAPI(server, fridge, sensors) {
     // Query the API for fridge sensor data
     const startTime = new Date(document.getElementById("startTime").value).toISOString();
-    const endTime = new Date().toISOString();
+    const endTime = now();
     
     const requestData = {
         earliest_timestamp: startTime,
@@ -70,7 +70,7 @@ async function fetchFromAPI(server, fridge, sensors) {
 
 async function fetchFridgesFromAPI(server, query) {
     // Query the API for fridge sensor data
-    const startTime = new Date(new Date().getTime() - 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16);  // 3 days ago
+    const startTime = new Date(new Date().getTime() - 3 * 24 * 60 * 60 * 1000).toISOString();  // 3 days ago
     const endTime = now();
     const requestData = {
         earliest_timestamp: startTime,

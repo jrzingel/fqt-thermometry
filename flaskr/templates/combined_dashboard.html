@@ -77,13 +77,6 @@ function go() {
             .then(packed => {
                 let data = prepData(packed, FRIDGE_KEYS);
 
-                // Move from K to mK readings
-                //for (let i = 1; i < data.length; i++) {
-                 //   for (let j = 0; j < data[i].length; j++) {
-                  //      data[i][j] *= 1000;
-                   // }
-                //}
-
                 plot.setData(data, resetScales=first_run);
                 status.textContent = "";
             })
@@ -96,7 +89,6 @@ function go() {
     refreshData(true);
     setInterval(refreshData, 30_000);
 }
-
 
 // Specify graphs to plot.
 // Will create one large plot for all the MXC sensors of each fridge

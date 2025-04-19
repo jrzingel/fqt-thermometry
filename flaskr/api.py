@@ -177,12 +177,12 @@ class NewReadingSchema(Schema):
 
 # Authorization
 def generate_signature(fridge: str, sensor: str, time: int, reading: float) -> str:
-    """Generate the HMAC signautre for a given reading"""
+    """Generate the HMAC signature for a given reading"""
     secret = current_app.config["FRIDGE_KEYS"].get(fridge).encode()
     if not secret:
         return ""
-    return hmac.new(secret, str(fridge + sensor + str(time) + str(reading)).encode(), hashlib.sha256).hexdigest()
-
+    payload = f"{fridge}.{sensor}.{time}.{float(reading)}"
+    return hmac.new(secret, payload.encode(), hashlib.sha256).hexdigest()
 
 
 @bp.post("/v1/new")
@@ -192,6 +192,7 @@ def addReading(json_data: dict):
     """Upload temperature data for a given time from listener.py. Not publicly accessible."""
     db = get_db()
     time = int(json_data["time"].timestamp())
+    print(time)
 
     # First, identify if the request is genuine
     signature = generate_signature(json_data["fridge"], json_data["sensor"], time, json_data["reading"])

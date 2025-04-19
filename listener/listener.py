@@ -2,18 +2,21 @@
 # Copied and pasted onto the fridge PCs.
 # For an up-to-date version, check the repository on GitHub : https://github.com/jrzingel/fqt-thermometry
 
-__VERSION__ = 1.3
+__VERSION__ = 1.4
 
 import os
+import sys
 import requests
 from datetime import datetime
 from dateutil import tz
 import yaml
+import hmac
+import hashlib
 import time
 
 
-SERVER_LOCATION = "129.94.115.104"
-#SERVER_LOCATION = "localhost:5000"
+#SERVER_LOCATION = "129.94.115.104"
+SERVER_LOCATION = "localhost:5000"
 CONFIG_FILE = os.path.join(os.getcwd(), "fridge.yaml")
 
 
@@ -38,15 +41,23 @@ def wait_for_server():
     print(" ONLINE")
 
 
+def generate_signature(secret: str, fridge: str, sensor: str, unixtime: int, reading: float) -> str:
+    """Generate the HMAC signature for a given reading"""
+    payload = f"{fridge}.{sensor}.{unixtime}.{float(reading)}"
+    return hmac.new(secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
 
-def upload_reading(timestamp: datetime, fridge: str, sensor: str, reading: float):
+
+def upload_reading(timestamp: datetime, fridge: str, sensor: str, reading: float, secret: str):
     """Given a temperature reading, upload it to the API"""
     print(f"{timestamp.isoformat()}: {sensor} == {reading}", end=" ")
+
+    signature = generate_signature(secret, fridge, sensor, int(timestamp.timestamp()), reading)
     data = {
-        "timestamp": timestamp.isoformat(),
+        "time": timestamp.isoformat(),
         "fridge": fridge,
         "sensor": sensor,
-        "temp": reading,
+        "reading": reading,
+        "signature": signature
     }
     try:
         req = requests.post(
@@ -71,7 +82,7 @@ def upload_reading(timestamp: datetime, fridge: str, sensor: str, reading: float
 def watch_X_file(path: str, last_position: int = 0):
     """Return the next line if available"""
     if not os.path.exists(path):
-        print(f"File {path} does not exist. Skipping...")
+        #print(f"File {path} does not exist. Skipping...")  # This line is too verbose when the magnet is not connected
         return None, last_position
 
     with open(path, "r") as f:
@@ -111,6 +122,7 @@ def listen():
             return
 
     fridge = config["fridge"]
+    secret = config["secret"]
     logdir = config["logdir"]
     print(f"Watching {fridge} at {logdir}")
 
@@ -140,7 +152,7 @@ def listen():
                 splits = line.strip().split(",")
                 reading = float(splits[2])
                 if reading != 0.0:  # Temperatures can never be 0K (means the sensor is disabled)
-                    upload_reading(format_time(splits[0:2]), fridge, params["sensor"], reading)  # Only upload the UTC time
+                    upload_reading(format_time(splits[0:2]), fridge, params["sensor"], reading, secret)  # Only upload the UTC time
 
         # Upload maxigauge pressures
         file_positions, pos = get_file_position(file_positions, "maxigauge")
@@ -153,7 +165,7 @@ def listen():
             if len(splits) == 39:  # 2 timestamps + 6 sensors * 6 values + 1 end
                 for i in range(6):
                     if int(splits[2 + 6*i + 2]) == 1:  # Only upload active sensors
-                        upload_reading(format_time(splits[0:2]), fridge, f"P{i+1}", float(splits[2 + 6*i + 3]))
+                        upload_reading(format_time(splits[0:2]), fridge, f"P{i+1}", float(splits[2 + 6*i + 3]), secret)
             else:
                 print("Maxigauge log file has an unexpected number of columns. Skipping...")
 
@@ -167,24 +179,23 @@ def listen():
                 # Parse the string and only upload ACTIVE pressure sensor readings
                 splits = line.strip().split(",")
                 if len(splits) == 74:
-                    upload_reading(format_time(splits[0:2]), fridge, "pulse_on", float(splits[21]))
+                    upload_reading(format_time(splits[0:2]), fridge, "pulse_on", float(splits[21]), secret)
                 else:
                     print("Status log file has an unexpected number of columns. Skipping...")
 
-
         time.sleep(1.0)  # Logs only update every minute so no need to check more often
-
 
 
 if __name__ == "__main__":
     print(f"Version: {__VERSION__}")
 
     wait_for_server()
+    #upload_reading(datetime.now(tz.UTC), "venus", "P1", 234234, "venus-key")
 
-    listen()
-
-    # If we get here, something went wrong
-    time.sleep(10.0)  # enough time to read the error
-    print("Exiting...")
-
+    try:
+        listen()
+    except KeyboardInterrupt:
+        print("Shutting down")
+        time.sleep(5.0)
+    sys.exit(0)
 

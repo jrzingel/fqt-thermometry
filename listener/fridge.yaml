@@ -4,6 +4,7 @@
 # DATE will be replaced with the current date
 
 fridge: "venus"
+secret: "venus-key"  # used to sign messages
 logdir: "C:\\Users\\LabUser\\Desktop\\Logs"
 maxigauge: "maxigauge DATE.log"
 status: "status DATE.log"

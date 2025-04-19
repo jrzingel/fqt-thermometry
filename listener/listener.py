@@ -15,8 +15,8 @@ import hashlib
 import time
 
 
-#SERVER_LOCATION = "129.94.115.104"
-SERVER_LOCATION = "localhost:5000"
+SERVER_LOCATION = "129.94.115.104"  # points to status.fqt.unsw.edu.au
+#SERVER_LOCATION = "localhost:5000"
 CONFIG_FILE = os.path.join(os.getcwd(), "fridge.yaml")
 
 

@@ -64,6 +64,13 @@ class Watchtower:
             else:
                 alert.try_enable()
 
+    def status(self, fname="status.txt"):
+        """Print the current status of which alarms are active"""
+        with open(fname, "w") as f:
+            f.write(f"[{datetime.now().isoformat()}] Current status of configured alerts:\n")
+            for alert in self.alerts:
+                f.write(f"- {alert.__class__.__name__} @ {alert.fridge}: {"ACTIVE" if alert.active else "DISABLED"}\n")
+
 
 if __name__ == "__main__":
     morello_webhook = "https://prod-58.australiasoutheast.logic.azure.com:443/workflows/b051ee511eb440c7acd48c3169746c5b/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=C57BECtucQyq-WnDmi35NKyk2-Q8MNo-kaVuFk3PSp4"
@@ -77,6 +84,7 @@ if __name__ == "__main__":
 
     #schedule.every(1).minute.do(watch.lookout)
     schedule.every(10).seconds.do(watch.lookout)
+    schedule.every(10).seconds.do(watch.status)
 
     while True:
         schedule.run_pending()

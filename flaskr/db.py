@@ -94,7 +94,8 @@ def create_dummy_data():
         # Randomly set some values to null to test graphing later
         inx = np.random.randint(0, n, size=(n // 4))
         vals = np.delete(vals, inx)
-        tuples = [(t, id, r) for t, r in zip(times, vals)]
+        times_ = np.delete(times.copy(), inx)
+        tuples = [(t, id, r) for t, r in zip(times_, vals)]
         db.executemany(
             'INSERT INTO measurement (time, sensor_id, reading) VALUES (?, ?, ?)', tuples
         )

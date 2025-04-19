@@ -23,16 +23,6 @@ from flaskr.db import get_db, fetch_readings
 bp = APIBlueprint("api", __name__, url_prefix="/api")
 
 
-# Authorization
-def is_valid_signature(fridge: str, payload: dict, signature: str) -> bool:
-    """Check if the HMAC signature of the message is valid"""
-    secret = current_app.config["FRIDGE_KEYS"].get(fridge)
-    if not secret:
-        return False
-    expected_sig = hmac.new(secret, str(payload).encode(), hashlib.sha256).hexdigest()
-    return hmac.compare_digest(expected_sig, signature)
-
-
 @bp.get("/v1/ping")
 @bp.doc(summary="Ping that the API server is active")
 def ping():
@@ -87,7 +77,7 @@ def getLatestReading(query_data: dict):
         SELECT m.time, m.reading
         FROM measurement m
         WHERE m.sensor_id = ?
-        ORDER BY m.time
+        ORDER BY m.time DESC 
         """, (sensor_id,)).fetchone()
     if result:
         time, reading = result
@@ -146,7 +136,7 @@ class MultipleFridgeReadingSchema(Schema):
 
 
 class MultipleFridgeResponseSchema(Schema):
-    timestamps = List(Integer(), required=True)
+    times = List(Integer(), required=True)
     readings = Dict(keys=String(), values=List(Float()), required=True)  # {fridge.sensor: [readings]}
 
 
@@ -171,39 +161,74 @@ def getMultipleFridgeReadings(json_data: dict):
     df = df.replace({np.nan: None})
 
     return {
-        "timestamps": df.index.values.tolist(),
+        "times": df.index.values.tolist(),
         "readings": {fridge + "." + sensor: series.tolist() for (fridge, sensor), series in df.items()}
     }
 
+
 class NewReadingSchema(Schema):
     """Schema for a single reading to upload"""
-    timestamp = DateTime(required=True)
-    temp = Float(required=True)
+    time = DateTime(required=True)
+    reading = Float(required=True)
     fridge = String(required=True)
     sensor = String(required=True)
+    signature = String(required=True)  # HMAC signature of the message
+
+
+# Authorization
+def is_valid_signature(fridge: str, payload: dict, signature: str) -> bool:
+    """Check if the HMAC signature of the message is valid"""
+    secret = current_app.config["FRIDGE_KEYS"].get(fridge)
+    if not secret:
+        return False
+    expected_sig = hmac.new(secret, str(payload).encode(), hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected_sig, signature)
 
 
 @bp.post("/v1/new")
 @bp.input(NewReadingSchema)
-@bp.doc(summary="Add a new reading for a given sensor")
+@bp.doc(summary="Add a new reading for a given sensor. Cryptographically secure.")
 def addReading(json_data: dict):
     """Upload temperature data for a given time from listener.py. Not publicly accessible."""
-    #print(json_data)
     db = get_db()
-    fridge = json_data["fridge"]
-    sensor = json_data["sensor"]
-    temp = json_data["temp"]
-    timestamp = json_data["timestamp"]
+    time = int(json_data["time"].timestamp())
 
-    # TODO: Add validation that this is a known fridge and sensor
+    # First, identify which table to use
+    result = db.execute(
+        """
+        SELECT s.id AS sensor_id, s.latest
+        FROM sensor s
+        JOIN fridge f ON f.id = s.fridge_id
+        WHERE s.name = ? AND f.name = ?;""",
+        (json_data["sensor"], json_data["fridge"])
+    ).fetchone()
 
-    try:
-        db.execute(
-            "INSERT INTO temperatures (timestamp, fridge, sensor, temp) VALUES (?, ?, ?, ?)",
-            (timestamp, fridge, sensor, temp),
-        )
-        db.commit()
-    except db.IntegrityError:
-        return abort(500, "Duplicate data entry")
+    if not result:
+        abort(404, f"No sensor '{json_data['sensor']}' found for fridge '{json_data['fridge']}'")
+    sensor_id, latest_only = result
+
+    if latest_only:
+        # Add to the latest table
+        try:
+            db.execute("""
+            INSERT INTO latest_reading (sensor_id, time, reading)
+            VALUES (?, ?, ?)
+            ON CONFLICT(sensor_id) DO UPDATE SET
+                time = excluded.time,
+                reading = excluded.reading;
+            """, (sensor_id, time, json_data["reading"]))
+            db.commit()
+        except db.IntegrityError:
+            return abort(500, "Duplicated data entry")
+    else:
+        # Add to historic readings table
+        try:
+            db.execute("""
+            INSERT INTO measurement (time, sensor_id, reading) 
+            VALUES (?, ?, ?)
+            """, (time, sensor_id, json_data["reading"]))
+            db.commit()
+        except db.IntegrityError:
+            return abort(500, "Duplicate data entry")
     return {"success": True}
 

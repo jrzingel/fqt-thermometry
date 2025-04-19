@@ -7,11 +7,10 @@ from datetime import datetime
 class PulseTubeAlert(Alert):
     @override
     def is_in_alarm(self) -> bool:
-        json = self._get_latest("pulse_on")
-        if ("timestamp" in json.keys()) and ("temp" in json.keys()):
-            # We have the reading, check if it is running
-            if json["temp"] == 1.0:
-                return False
+        measurement = self._get_latest("pulse_on")
+        # We have the reading, check if it is running
+        if "reading" in measurement.keys() and measurement["reading"] == 1.0:
+            return False
         self.activate()
         return True  # Default to alarm state (also if no data exists)
 

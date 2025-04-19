@@ -12,5 +12,12 @@ alerts:
     - venus
     - winona
 
+  UnresponsiveFridge:
+    - queenie
+    - scarlett
+    - tallulah
+    - venus
+    - winona
+
   #OilTempAlert:
     #- venus

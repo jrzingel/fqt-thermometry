@@ -23,12 +23,18 @@ class Alert(object):
         )
         if r.status < 300:
             try:
-                return json.loads(r.data.decode('utf-8'))
+                measurement = json.loads(r.data.decode('utf-8'))
             except JSONDecodeError as e:
-                print(f"Failed to parse json {e}")
+                print(f"ERROR Failed to parse json {e}")
                 return {}
-        print(f"Server error {r.status}")
-        return {}
+            if ("reading" in measurement.keys()) and ("time" in measurement.keys()):
+                return measurement
+            else:
+                print(f"ERROR Unknown keys {measurement.keys()}")
+                return {}
+        else:
+            #print(f"ERROR Server error {r.status}")
+            return {}
 
     def enable_after_delay(self, cooldown=1):
         """Re-enable the alarm if it has not been triggered for an hour"""
@@ -40,31 +46,33 @@ class Alert(object):
                 self.active = True
                 print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} ({self.fridge}) re-enabling.")
 
-
     def enable_if_cold(self):
         """Re-enable the alarm if it is no longer in a state of alarm"""
-        if self.active is False:
+        if not self.active:
             if not self.is_in_alarm():
                 self.active = True
                 print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} ({self.fridge}) re-enabling.")
 
     def enable_after_delay_and_cold(self, cooldown=1):
         """Re-enable the alarm if it is both cold and a delay has passed"""
-        if self.active is False:
+        if not self.active:
             if self.last_triggered is None:
-                if not self.is_in_alarm():
-                    self.active = True
-                    print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} ({self.fridge}) re-enabling.")
+                self.enable_if_cold()
             elif datetime.now() > (self.last_triggered + timedelta(hours=cooldown)):
-                if not self.is_in_alarm():
-                    self.active = True
-                    print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} ({self.fridge}) re-enabling.")
+                self.enable_if_cold()
 
+    def enable_if_below_threshold(self, sensor: str, threshold: float):
+        """Re-enable the alarm if a particular sensor is below a threshold. This threshold should be sufficiently below the alarm point"""
+        if not self.active:
+            measurement = self._get_latest(sensor)
+            if "reading" in measurement.keys() and measurement["reading"] <= threshold:
+                self.active = True
+                print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} ({self.fridge}) re-enabling.")
 
     def activate(self):
         """Activate the alarm"""
         if self.active:
-            print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} ({self.fridge}) is in alarm! Sending alert")
+            print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} is in alarm for instance '{self.fridge}'. Sending teams message.")
             self.active = False
             self.last_triggered = datetime.now()
 

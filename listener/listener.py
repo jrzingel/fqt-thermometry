@@ -38,7 +38,7 @@ def wait_for_server():
     while not check_alive():
         print(".", end="")
         time.sleep(5.0)
-    print(" ONLINE")
+    print(" OK.")
 
 
 def generate_signature(secret: str, fridge: str, sensor: str, unixtime: int, reading: float) -> str:

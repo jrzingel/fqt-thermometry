@@ -2,7 +2,7 @@
 
 
 alerts:
-  PulseTubeAlert:  # requires modern bluefors software
+  PulseTubeOff:  # requires modern bluefors software with status file
     - venus
 
   MxcAbove1K:
@@ -19,5 +19,5 @@ alerts:
     - venus
     - winona
 
-  #OilTempAlert:
-    #- venus
+  HotOilTemp:
+    - venus

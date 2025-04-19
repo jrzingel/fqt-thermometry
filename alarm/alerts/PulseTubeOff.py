@@ -4,7 +4,7 @@ from .Alert import Alert
 from datetime import datetime
 
 
-class PulseTubeAlert(Alert):
+class PulseTubeOff(Alert):
     @override
     def is_in_alarm(self) -> bool:
         measurement = self._get_latest("pulse_on")

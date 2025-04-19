@@ -4,6 +4,7 @@ import sqlite3
 from datetime import datetime, timedelta, UTC
 import click
 import numpy as np
+import pandas as pd
 
 from flask import current_app, g
 
@@ -90,6 +91,9 @@ def create_dummy_data():
             i += random.gauss(0, 10)
             i = max(0.01, i)
             vals.append(i)
+        # Randomly set some values to null to test graphing later
+        inx = np.random.randint(0, n, size=(n // 4))
+        vals = np.delete(vals, inx)
         tuples = [(t, id, r) for t, r in zip(times, vals)]
         db.executemany(
             'INSERT INTO measurement (time, sensor_id, reading) VALUES (?, ?, ?)', tuples
@@ -105,6 +109,29 @@ def create_dummy_data():
         )
 
     db.commit()
+
+
+def fetch_readings(query: list[tuple], earliest_stamp: int, latest_stamp: int) -> pd.DataFrame:
+    """Fetch all sensor readings between timestamps for the given  fridge/sensor querys."""
+    # query should be of the form: [("fridge", "sensor"), ("fridge", "sensor"), ... ]
+    db = get_db()
+
+    # Build dynamic WHERE clause
+    WHERE_clause = " OR ".join([f"(f.name = ? AND s.name = ?)" for _ in query])
+    result = db.execute(f"""
+    SELECT f.name AS fridge, s.name AS sensor, m.time, m.reading
+    FROM measurement m
+    JOIN sensor s ON m.sensor_id = s.id
+    JOIN fridge f ON s.fridge_id = f.id
+    WHERE ({WHERE_clause})
+    AND m.time BETWEEN ? AND ?
+    ORDER BY m.time
+    """, [v for pair in query for v in pair] + [earliest_stamp, latest_stamp]).fetchall()
+
+    df = pd.DataFrame(result, columns=['fridge', 'sensor', 'time', 'reading'])
+    df["fridge_sensor"] = df["fridge"] + "_" + df["sensor"]
+    pivoted = df.pivot(index='time', columns=['fridge', 'sensor'], values='reading')
+    return pivoted.sort_index(axis=1)
 
 
 @click.command('init-db')
@@ -152,3 +179,4 @@ def init_app(app):
     app.cli.add_command(create_dummy_data_command)
     app.cli.add_command(add_fridge_command)
     app.cli.add_command(add_sensor_command)
+

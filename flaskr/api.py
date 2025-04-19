@@ -17,7 +17,7 @@ import hmac
 import hashlib
 
 
-from flaskr.db import get_db
+from flaskr.db import get_db, fetch_readings
 
 
 bp = APIBlueprint("api", __name__, url_prefix="/api")
@@ -31,11 +31,6 @@ def is_valid_signature(fridge: str, payload: dict, signature: str) -> bool:
         return False
     expected_sig = hmac.new(secret, str(payload).encode(), hashlib.sha256).hexdigest()
     return hmac.compare_digest(expected_sig, signature)
-
-
-def unix_to_iso(unixtime: int) -> str:
-    """Convert from UNIX timestamp to ISO string"""
-    return datetime.fromtimestamp(unixtime).isoformat() + 'Z'
 
 
 @bp.get("/v1/ping")
@@ -108,74 +103,39 @@ def getLatestReading(query_data: dict):
 class RangedReadingSchema(Schema):
     """Schema for specifying a range of readings to return"""
     fridge = String(required=True)
-    sensors = List(String())
-    earliest_timestamp = DateTime(required=False)
-    latest_timestamp = DateTime(required=False)
+    sensors = List(String(), required=True)
+    earliest_timestamp = DateTime(required=True)
+    latest_timestamp = DateTime(required=True)
 
 class RangedResponseSchema(Schema):
-    timestamps = List(Integer(), required=True)
+    times = List(Integer(), required=True)
     fridge = String(required=True)
     readings = Dict(keys=String(), values=List(Float()), required=True)
 
-# TODO: Add /v1/range/hour to return the latest of the past hour
+
 @bp.post("/v1/range")
 @bp.input(RangedReadingSchema)
 @bp.output(RangedResponseSchema)
 @bp.doc(summary="Get all readings for some sensors between two timestamps on one fridge")
 def getRangeOfReadings(json_data: dict):
     """Get a range of readings between two timestamps for some given sensors."""
-    db = get_db()
-
     # Sanity checks of the input
     if json_data["earliest_timestamp"] > json_data["latest_timestamp"]:
         return abort(400, "Earliest timestamp must be before latest timestamp")
 
-    raw_data = {}
+    earliest = int(json_data["earliest_timestamp"].timestamp())
+    latest = int(json_data["latest_timestamp"].timestamp())
+    print(earliest, latest)
 
-    for sensor in json_data["sensors"]:
-        reading_rows = db.execute(
-            'SELECT * from temperatures WHERE fridge = ? AND sensor = ? AND timestamp >= ? AND timestamp <= ? ORDER BY timestamp',
-            (json_data["fridge"], sensor, json_data["earliest_timestamp"], json_data["latest_timestamp"])
-        ).fetchall()
-
-        if reading_rows is None:
-            reading_rows = []
-
-        raw_data[sensor] = reading_rows
-
-    # All results should use a common set of timestamps
-    # -> Merge with Pandas
-    # {timestamps: [...], readings: {sensor_name: [...], ...}
-
-    df_list = []
-    for sensor, reading_rows in raw_data.items():
-        timestamps = []
-        readings = []
-
-        for row in reading_rows:
-            r = dict(row)
-            timestamps.append(r["timestamp"])
-            readings.append(r["temp"])
-
-        df = pd.DataFrame({
-            'timestamp': timestamps, sensor: readings
-        })
-        df.set_index('timestamp', inplace=True)
-        df_list.append(df)
-
-
-    result = reduce(lambda left, right: pd.merge(left, right, left_on='timestamp', right_on='timestamp', how='outer'), df_list)
-
-    # Convert timestamps from Nanoseconds since the epoch to standard Unix epoch (second)
-    result.index = result.index.values.astype(np.int64) // 10**9
+    df = fetch_readings([(json_data["fridge"], s) for s in json_data["sensors"]], earliest, latest)
 
     # Convert NaN to null
-    result = result.replace({np.nan: None})
+    df = df.replace({np.nan: None})
 
     return {
         "fridge": json_data["fridge"],
-        "timestamps": result.index.values.tolist(),
-        "readings": result.to_dict('list')
+        "times": df.index.values.tolist(),
+        "readings": {sensor: series.tolist() for (fridge, sensor), series in df.items()},
     }
 
 

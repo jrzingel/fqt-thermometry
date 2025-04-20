@@ -21,3 +21,10 @@ alerts:
 
   HotOilTemp:
     - venus
+
+  LosingVacuum:
+    - queenie
+    - scarlett
+    - tallulah
+    - venus
+    - winona

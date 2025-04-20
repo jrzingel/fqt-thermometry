@@ -87,7 +87,7 @@ function setupPlots(num_plots) {
             label: capitalize(SENSORS[i - 1]),
             stroke: COLOURS[i - 1],
             spanGaps: true,
-            value: (u, v) => v == null ? '' : v + UNIT
+            value: (u, v) => v == null ? '' : formatNumber(v, dp=4) + UNIT
         });
     }
 
@@ -131,7 +131,7 @@ function setupPlots(num_plots) {
                     label: capitalize(SENSORS[i]),
                     stroke: COLOURS[i],
                     spanGaps: true,
-                    value: (u, v) => v == null ? '' : v + UNIT,
+                    value: (u, v) => v == null ? '' : formatNumber(v, dp=4) + UNIT,
                 }
             ],
         }

@@ -46,6 +46,12 @@ function now() {
     return new Date().toISOString();
 }
 
+function formatNumber(value, dp=4) {
+    return Math.abs(value) < Math.pow(10, -dp) && value !== 0
+        ? value.toExponential(dp)
+        : parseFloat(value.toFixed(dp)).toString();
+}
+
 async function fetchFromAPI(server, fridge, sensors) {
     // Query the API for fridge sensor data
     const startTime = new Date(document.getElementById("startTime").value).toISOString();

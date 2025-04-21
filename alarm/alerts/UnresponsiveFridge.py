@@ -25,6 +25,7 @@ class UnresponsiveFridge(Alert):
                 reading_time = datetime.fromisoformat(measurement["time"])
                 if reading_time + timedelta(minutes=5) > self.time_last_seen:
                     # Reading is fresh (no need to keep checking)
+                    self.time_last_seen = reading_time
                     return False
         self.activate()
         return True

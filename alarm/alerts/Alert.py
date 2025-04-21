@@ -76,6 +76,12 @@ class Alert(object):
             self.active = False
             self.last_triggered = datetime.now()
 
+    def deactivate(self):
+        """Alert is in a state that is no longer sensitive"""
+        if self.active:
+            print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} deactivating for instance '{self.fridge}'.")
+            self.active = False
+
     def try_enable(self):
         """Try to re-enable the alarm. Make sure that alarm spam doesn't exist"""
         # self.enable_after_delay()

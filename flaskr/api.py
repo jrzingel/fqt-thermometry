@@ -192,7 +192,6 @@ def addReading(json_data: dict):
     """Upload temperature data for a given time from listener.py. Not publicly accessible."""
     db = get_db()
     time = int(json_data["time"].timestamp())
-    print(time)
 
     # First, identify if the request is genuine
     signature = generate_signature(json_data["fridge"], json_data["sensor"], time, json_data["reading"])
@@ -213,9 +212,9 @@ def addReading(json_data: dict):
         abort(404, f"No sensor '{json_data['sensor']}' found for fridge '{json_data['fridge']}'")
     sensor_id, latest_only = result
 
-    if latest_only:
-        # Add to the latest table
-        try:
+    try:
+        if latest_only:
+            # Add to the latest table
             db.execute("""
             INSERT INTO latest_reading (sensor_id, time, reading)
             VALUES (?, ?, ?)
@@ -223,18 +222,14 @@ def addReading(json_data: dict):
                 time = excluded.time,
                 reading = excluded.reading;
             """, (sensor_id, time, json_data["reading"]))
-            db.commit()
-        except db.IntegrityError:
-            return abort(500, "Duplicated data entry")
-    else:
-        # Add to historic readings table
-        try:
+        else:
+            # Add to historic readings table
             db.execute("""
             INSERT INTO measurement (time, sensor_id, reading) 
             VALUES (?, ?, ?)
             """, (time, sensor_id, json_data["reading"]))
-            db.commit()
-        except db.IntegrityError:
-            return abort(500, "Duplicate data entry")
+        db.commit()
+    except db.IntegrityError:
+        return abort(500, "Duplicate data entry")
     return {"success": True}
 

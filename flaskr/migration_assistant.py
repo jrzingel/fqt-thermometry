@@ -63,7 +63,7 @@ def add_new_reading(sensor_id: int, latest_only: bool, time: int, reading: float
             return
 
 
-FRIDGES = ["scarlett"]
+FRIDGES = ["queenie", "scarlett", "venus", "tallulah", "winona"]
 SENSORS = ["P1", "P2", "P3", "P4", "P5", "P6", "50K", "4K", "magnet", "still", "mxc"]
 
 for fridge in FRIDGES:
@@ -90,8 +90,9 @@ for fridge in FRIDGES:
 
         sensor_id, latest_only = result
         for reading in readings:
-            time = reading["timestamp"].timestamp()
-            add_new_reading(sensor_id, latest_only, time, reading["temp"])
+            if reading != 0.0:
+                time = reading["timestamp"].timestamp()
+                add_new_reading(sensor_id, latest_only, time, reading["temp"])
             i += 1
             if i > divs:
                 print(".", end="")

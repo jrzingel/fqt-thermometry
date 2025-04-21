@@ -11,7 +11,7 @@ import sqlite3
 from datetime import datetime
 
 
-old_db_path = "instance/old_flaskr.sqlite"
+old_db_path = "instance/flaskr_old.sqlite"
 new_db_path = "instance/flaskr.sqlite"
 
 
@@ -37,18 +37,13 @@ def add_new_reading(sensor_id: int, latest_only: bool, time: int, reading: float
     #  Copied from /new
     if latest_only:
         # Add to the latest table
-        try:
-            new_db.execute("""
-            INSERT INTO latest_reading (sensor_id, time, reading)
-            VALUES (?, ?, ?)
-            ON CONFLICT(sensor_id) DO UPDATE SET
-                time = excluded.time,
-                reading = excluded.reading;
-            """, (sensor_id, time, reading))
-            new_db.commit()
-        except new_db.IntegrityError:
-            print("Latest table reading already exists (and didn't update???)")
-            return
+        new_db.execute("""
+        INSERT INTO latest_reading (sensor_id, time, reading)
+        VALUES (?, ?, ?)
+        ON CONFLICT(sensor_id) DO UPDATE SET
+            time = excluded.time,
+            reading = excluded.reading;
+        """, (sensor_id, time, reading))
     else:
         # Add to historic readings table
         try:
@@ -56,7 +51,6 @@ def add_new_reading(sensor_id: int, latest_only: bool, time: int, reading: float
             INSERT INTO measurement (time, sensor_id, reading) 
             VALUES (?, ?, ?)
             """, (time, sensor_id, reading))
-            new_db.commit()
         except new_db.IntegrityError:
             #print(f"Duplicate data entry: {time}, {sensor_id}, {reading}")
             # This is usually from daylight savings... which I don't care about
@@ -97,4 +91,7 @@ for fridge in FRIDGES:
             if i > divs:
                 print(".", end="")
                 i = 0
+        
+        new_db.commit()
+        
         print()

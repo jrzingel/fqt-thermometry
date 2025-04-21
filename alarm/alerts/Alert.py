@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 import json
 from json import JSONDecodeError
 
+import urllib3.exceptions
+
 
 class Alert(object):
     def __init__(self, http, api_url: str, fridge: str):
@@ -15,12 +17,17 @@ class Alert(object):
 
     def _get_latest(self, sensor) -> {}:
         """Common code to fetch the latest reading from the server"""
-        r = self.http.request(
-            'GET',
-            self.api_url + f"/api/v1/latest?fridge={self.fridge}&sensor={sensor}",
-            headers={"Content-Type": "application/json"},
-            timeout=10
-        )
+        try:
+            r = self.http.request(
+                'GET',
+                self.api_url + f"/api/v1/latest?fridge={self.fridge}&sensor={sensor}",
+                headers={"Content-Type": "application/json"},
+                timeout=10
+            )
+        except urllib3.exceptions.MaxRetryError as e:
+            # Server is down
+            print(f"ERROR API server is unreachable: {e}")
+            return {}
         if r.status < 300:
             try:
                 measurement = json.loads(r.data.decode('utf-8'))

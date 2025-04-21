@@ -130,8 +130,14 @@ def fetch_readings(query: list[tuple], earliest_stamp: int, latest_stamp: int) -
     """, [v for pair in query for v in pair] + [earliest_stamp, latest_stamp]).fetchall()
 
     df = pd.DataFrame(result, columns=['fridge', 'sensor', 'time', 'reading'])
-    df["fridge_sensor"] = df["fridge"] + "_" + df["sensor"]
+    #df["fridge_sensor"] = df["fridge"] + "_" + df["sensor"]
     pivoted = df.pivot(index='time', columns=['fridge', 'sensor'], values='reading')
+
+    # Make sure that all the request parameters are full (even if there is no data)
+    for (f, s) in query:
+        col = (f, s)
+        if col not in pivoted.columns:
+            pivoted[col] = None
     return pivoted.sort_index(axis=1)
 
 

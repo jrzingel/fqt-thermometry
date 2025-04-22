@@ -155,7 +155,7 @@ def getMultipleFridgeReadings(json_data: dict):
     earliest = int(json_data["earliest_timestamp"].timestamp())
     latest = int(json_data["latest_timestamp"].timestamp())
 
-    df = fetch_readings([(q[0], q[1]) for q in json_data["query"]], earliest, latest)
+    df = fetch_readings([(q[0], q[1]) for q in json_data["query"]], earliest, latest, bin=60)
 
     # Convert NaN to null
     df = df.replace({np.nan: None})

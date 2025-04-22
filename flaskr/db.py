@@ -112,8 +112,8 @@ def create_dummy_data():
     db.commit()
 
 
-def fetch_readings(query: list[tuple], earliest_stamp: int, latest_stamp: int) -> pd.DataFrame:
-    """Fetch all sensor readings between timestamps for the given  fridge/sensor querys."""
+def fetch_readings(query: list[tuple], earliest_stamp: int, latest_stamp: int, bin: int =1) -> pd.DataFrame:
+    """Fetch all sensor readings between timestamps for the given  fridge/sensor querys. Combine times into multiples of bin"""
     # query should be of the form: [("fridge", "sensor"), ("fridge", "sensor"), ... ]
     db = get_db()
 
@@ -130,6 +130,8 @@ def fetch_readings(query: list[tuple], earliest_stamp: int, latest_stamp: int) -
     """, [v for pair in query for v in pair] + [earliest_stamp, latest_stamp]).fetchall()
 
     df = pd.DataFrame(result, columns=['fridge', 'sensor', 'time', 'reading'])
+    df['time'] = (df['time'] // bin) * bin  # bin the times
+
     #df["fridge_sensor"] = df["fridge"] + "_" + df["sensor"]
     pivoted = df.pivot(index='time', columns=['fridge', 'sensor'], values='reading')
 

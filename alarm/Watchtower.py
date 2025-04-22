@@ -76,15 +76,14 @@ if __name__ == "__main__":
     morello_webhook = "https://prod-58.australiasoutheast.logic.azure.com:443/workflows/b051ee511eb440c7acd48c3169746c5b/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=C57BECtucQyq-WnDmi35NKyk2-Q8MNo-kaVuFk3PSp4"
     test_webhook = "https://prod-38.australiasoutheast.logic.azure.com:443/workflows/4864832cab2141d395e86f5a95b4f561/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Z0UNCfaQ_5O6DVT3yzeee2qAxgO1S0rnBmYIZuwBb1o"
     fridge_api = "http://status.fqt.unsw.edu.au"
-    local_api = "http://localhost:5000"
+    local_api = "http://localhost"
 
     #watch = Watchtower(morello_webhook, fridge_api)
     watch = Watchtower(test_webhook, local_api)
     watch.load_config("config.yaml")
 
-    #schedule.every(1).minute.do(watch.lookout)
-    schedule.every(10).seconds.do(watch.lookout)
-    schedule.every(10).seconds.do(watch.status)
+    schedule.every(60).seconds.do(watch.lookout)
+    schedule.every(60).seconds.do(watch.status)
 
     while True:
         schedule.run_pending()

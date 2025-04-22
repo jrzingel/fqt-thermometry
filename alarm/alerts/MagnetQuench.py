@@ -10,6 +10,7 @@ This is when the temperature of the magnet rapidly rises from under 10K by 5K wi
 
 from typing import override
 from .Alert import Alert
+from datetime import datetime
 
 
 class MagnetQuench(Alert):
@@ -24,15 +25,15 @@ class MagnetQuench(Alert):
 
         if "reading" in measurement.keys():
             temp = measurement["reading"]
-            time = measurement["time"]
+            time = datetime.fromisoformat(measurement["time"])
 
             if self.last_reading_time is None:
-                within_2_minutes = True
+                within_2_minutes = False
             else:
                 within_2_minutes = (time - self.last_reading_time).total_seconds() < 2 * 60
 
             if self.last_reading is None:
-                jump_by_5 = True
+                jump_by_5 = False
             else:
                 jump_by_5 = (temp - self.last_reading) > 5.0
 

@@ -170,7 +170,7 @@ def listen():
                 print("Maxigauge log file has an unexpected number of columns. Skipping...")
 
         if "status" in config.keys():
-            # Check if the compressor (pulse tube) is running
+            # Check if the compressor status.
             file_positions, pos = get_file_position(file_positions, "status")
             file_path = os.path.join(logdir, today, config["status"].replace("DATE", today))
             line, new_pos = watch_X_file(file_path, pos)
@@ -178,8 +178,25 @@ def listen():
             if line:
                 # Parse the string and only upload ACTIVE pressure sensor readings
                 splits = line.strip().split(",")
-                if len(splits) == 74:
-                    upload_reading(format_time(splits[0:2]), fridge, "pulse_on", float(splits[21]), secret)
+                read_time = format_time(splits[0:2])
+
+                # Based on the BlueFors Control software used there is two different formats that this log file can take.
+                # The format can also change depending on which sensor/pumps are used in the gas handling system
+                # NEWER: 23-04-25,23:59:59,nxdsf,0.000000e+00,nxdspt,2.951500e+02,nxdsct,3.021500e+02,nxdst,9.331200e+07,nxdsbs,6.436440e+07,nxdstrs,0.000000e+00,ctrl_pres_ok,1.000000e+00,ctrl_pres,1.000000e+00,cpastate,3.000000e+00,cparun,1.000000e+00,cpawarn,-0.000000e+00,cpaerr,-0.000000e+00,cpatempwi,1.679444e+01,cpatempwo,2.427111e+01,cpatempo,2.421444e+01,cpatemph,6.006001e+01,cpalp,1.151647e+02,cpalpa,1.110834e+02,cpahp,3.080892e+02,cpahpa,3.058809e+02,cpadp,1.931654e+02,cpacurrent,1.251326e+01,cpahours,3.020700e+04,cpascale,0.000000e+00,cpasn,1.076200e+04,ctr_pressure_ok,1.000000e+00,tc400actualspd,0.000000e+00,tc400ovtempelec,0.000000e+00,tc400ovtemppum,0.000000e+00,tc400heating,0.000000e+00,tc400pumpaccel,0.000000e+00,tc400pumpstatn,1.000000e+00,tc400remoteprio,1.000000e+00,tc400spdswptatt,0.000000e+00,tc400setspdatt,0.000000e+00,tc400standby,0.000000e+00
+                # OLDER: 24-04-25,09:40:03,cptempwi,2.898500e+02,cptempwo,2.987500e+02,cptemph,3.370500e+02,cptempo,3.065500e+02,cpttime,2.294605e+08,cpavgl,8.190974e+00,cpavgh,2.160817e+01,ctrl_pres_ok,1.000000e+00,ctrl_pres,1.000000e+00,ctr_pressure_ok,1.000000e+00,tc400actualspd,8.200000e+02,tc400drvpower,1.630000e+02,tc400ovtempelec,0.000000e+00,tc400ovtemppum,0.000000e+00,tc400heating,0.000000e+00,tc400pumpaccel,0.000000e+00,tc400pumpstatn,1.000000e+00,tc400remoteprio,1.000000e+00,tc400spdswptatt,1.000000e+00,tc400setspdatt,1.000000e+00,tc400standby,0.000000e+00,tc400actualspd_2,8.200000e+02,tc400ovtempelec_2,0.000000e+00,tc400ovtemppum_2,0.000000e+00,tc400heating_2,0.000000e+00,tc400pumpaccel_2,0.000000e+00,tc400pumpstatn_2,1.000000e+00,tc400remoteprio_2,1.000000e+00,tc400spdswptatt_2,1.000000e+00,tc400setspdatt_2,1.000000e+00,tc400standby_2,0.000000e+00
+
+                if len(splits) % 2 == 0:  # make sure every reading has a name paired with it
+                    records = {}
+                    for i in range(2, len(splits), 2):
+                        records[splits[i]] = float(splits[i+1])
+
+                    # Extract readings to upload
+                    if "cptempo" in records.keys():  # compressor temperature oil
+                        upload_reading(read_time, fridge, "oil_temp", records["cptempo"], secret)
+                    if "cpatempo" in records.keys():  # compressor temperature oil (newer format)
+                        upload_reading(read_time, fridge, "oil_temp", records["cpatempo"], secret)
+                    if "cparun" in records.keys():  # compressor running (newer, meaning pulse tube is on)
+                        upload_reading(read_time, fridge, "pulse_on", records["cparun"], secret)
                 else:
                     print("Status log file has an unexpected number of columns. Skipping...")
 

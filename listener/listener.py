@@ -2,7 +2,7 @@
 # Copied and pasted onto the fridge PCs.
 # For an up-to-date version, check the repository on GitHub : https://github.com/jrzingel/fqt-thermometry
 
-__VERSION__ = 1.4
+__VERSION__ = 1.5
 
 import os
 import sys
@@ -192,9 +192,9 @@ def listen():
 
                     # Extract readings to upload
                     if "cptempo" in records.keys():  # compressor temperature oil
-                        upload_reading(read_time, fridge, "oil_temp", records["cptempo"], secret)
+                        upload_reading(read_time, fridge, "oil_temp", records["cptempo"] - 273.15, secret)  # KELVIN
                     if "cpatempo" in records.keys():  # compressor temperature oil (newer format)
-                        upload_reading(read_time, fridge, "oil_temp", records["cpatempo"], secret)
+                        upload_reading(read_time, fridge, "oil_temp", records["cpatempo"], secret)  # CELSIUS
                     if "cparun" in records.keys():  # compressor running (newer, meaning pulse tube is on)
                         upload_reading(read_time, fridge, "pulse_on", records["cparun"], secret)
                 else:

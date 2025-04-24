@@ -13,19 +13,14 @@ from .Alert import Alert
 
 
 class UnresponsiveFridge(Alert):
-    def __init__(self, http, api_url, fridge):
-        super().__init__(http, api_url, fridge)
-        self.time_last_seen = datetime.now(timezone.utc)
-
     def is_in_alarm(self) -> bool:
         sensors = ["P1", "P3", "50K", "4K"]
         for sensor in sensors:
             measurement = self._get_latest(sensor)
             if "time" in measurement.keys():
                 reading_time = datetime.fromisoformat(measurement["time"])
-                if reading_time + timedelta(minutes=5) > self.time_last_seen:
+                if reading_time + timedelta(minutes=5) > datetime.now(timezone.utc):
                     # Reading is fresh (no need to keep checking)
-                    self.time_last_seen = reading_time
                     return False
         self.activate()
         return True

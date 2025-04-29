@@ -10,16 +10,28 @@ Alert for when the vacuum can pressure is lost
 from typing import override
 from .Alert import Alert
 
+# From running this script it appears that sometimes there is a small pressure fluctuation
+# so you really need it to be greater than threshold for two consecutive measurements
 
 class LosingVacuum(Alert):
+    def __init__(self, http, api_url, fridge):
+        super().__init__(http, api_url, fridge)
+        self.pre_alarm = False  # Used if the last state was alarm too
+
     @override
     def is_in_alarm(self) -> bool:
         measurement = self._get_latest("P1")
         # We have the reading, check if it is > 1e-5
         if "reading" in measurement.keys() and measurement["reading"] < 1.0e-5:
+            self.pre_alarm = False
             return False
-        self.activate()
-        return True  # Default to alarm state (also if no data exists)
+
+        if self.pre_alarm:  # Meaning that the last check was triggered too
+            self.activate()
+            return True  # Default to alarm state (also if no data exists)
+        else:
+            self.pre_alarm = True
+            return False
 
     @override
     def try_enable(self):

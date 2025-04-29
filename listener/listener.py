@@ -108,6 +108,13 @@ def format_time(times: list):
     return local_time.astimezone(tz.UTC)
 
 
+def celsius_or_kelvin_to_celsius(temp: float):
+    """Convert a temperature reading guessing the range"""
+    if temp > 150:  # nothing should be this hot in celsius... so it must be kelvin
+        return temp - 273.15
+    return temp
+
+
 def listen():
     """Listen for new readings by watching the log files"""
     if not os.path.exists(CONFIG_FILE):
@@ -192,9 +199,9 @@ def listen():
 
                     # Extract readings to upload
                     if "cptempo" in records.keys():  # compressor temperature oil
-                        upload_reading(read_time, fridge, "oil_temp", records["cptempo"] - 273.15, secret)  # KELVIN
+                        upload_reading(read_time, fridge, "oil_temp", celsius_or_kelvin_to_celsius(records["cptempo"]), secret)  # KELVIN
                     if "cpatempo" in records.keys():  # compressor temperature oil (newer format)
-                        upload_reading(read_time, fridge, "oil_temp", records["cpatempo"], secret)  # CELSIUS
+                        upload_reading(read_time, fridge, "oil_temp", celsius_or_kelvin_to_celsius(records["cpatempo"]), secret)  # CELSIUS
                     if "cparun" in records.keys():  # compressor running (newer, meaning pulse tube is on)
                         upload_reading(read_time, fridge, "pulse_on", records["cparun"], secret)
                 else:

@@ -7,6 +7,7 @@ import os
 from flask import url_for, redirect, request
 import time
 from apiflask import APIFlask
+import mimetypes
 from . import db
 from . import api
 from . import dashboard
@@ -15,6 +16,8 @@ from . import dashboard
 def create_app():
     """Application factory for creating the flask app"""
     logger = logging.getLogger("thermometry")
+
+    mimetypes.add_type("image/webp", ".webp")
 
     app = APIFlask(__name__, instance_relative_config=True, title="FQT Lab Thermometry", version='1.0')
 

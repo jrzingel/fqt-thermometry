@@ -6,6 +6,9 @@
 <div class="w-full flex justify-between items-center">
     <div>
         <p>Click and drag to zoom in. Double click to reset the window. Automatically updates with live data.</p>
+        {% if showPressures %}
+            <p>See fridge schematic <a href="{{ url_for('static', filename='images/fridge.webp') }}" target="_blank" class="text-blue-600 underline underline-offset-2 hover:text-blue-800">here</a></p>
+        {% endif %}
     </div>
 
     <div class="flex items-bottom space-x-0 rounded-md border border-gray-300 bg-white">

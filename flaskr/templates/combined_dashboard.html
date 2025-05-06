@@ -71,13 +71,14 @@ function go() {
     status.textContent = "Rendering charts...";
     let plot = setupPlots(FRIDGES.length);
 
-    function refreshData(first_run=false) {
+    function refreshData() {
         status.textContent = "Fetching data...";
         fetchFridgesFromAPI("{{ url }}", FRIDGES)
             .then(packed => {
                 let data = prepData(packed, FRIDGE_KEYS);
 
-                plot.setData(data, resetScales=first_run);
+                let isZoomed = plot.scales.x.min > plot.data[0][0] || plot.scales.x.max < plot.data[0][plot.data[0].length - 1];
+                plot.setData(data, resetScales=!isZoomed);
                 status.textContent = "";
             })
             .catch((error) => {
@@ -86,7 +87,7 @@ function go() {
             });
     }
 
-    refreshData(true);
+    refreshData();
     setInterval(refreshData, 30_000);
 }
 

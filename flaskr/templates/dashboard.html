@@ -161,16 +161,17 @@ function go() {
     status.textContent = "Rendering charts...";
     let plots = setupPlots(SENSORS.length);
 
-    function refreshData(first_run=false) {
+    function refreshData() {
         status.textContent = "Fetching data..."
         fetchFromAPI("{{ url }}", FRIDGE, SENSORS)
             .then(packed => {
                 let data = prepData(packed, SENSORS);
 
-                plots[0].setData(data, resetScales=first_run);
+                let isZoomed = plots[0].scales.x.min > plots[0].data[0][0] || plots[0].scales.x.max < plots[0].data[0][plots[0].data[0].length - 1];
+                plots[0].setData(data, resetScales=!isZoomed);
                 for (let i = 0; i < SENSORS.length; i++) {
                     let pI = SUBPLOT_ORDER[i]
-                    plots[1][i].setData([data[0], data[pI+1]], resetScales=first_run);
+                    plots[1][i].setData([data[0], data[pI+1]], resetScales=!isZoomed);
                 }
                 status.textContent = "";
             })
@@ -180,7 +181,7 @@ function go() {
             });
     }
 
-    refreshData(true);
+    refreshData();
     setInterval(refreshData, 30_000);
 
     // Dynamically update the data when required
@@ -188,7 +189,7 @@ function go() {
         if (document.getElementById("startTime").value === "") {
             return  // Don't do anything if the start time is empty
         }
-        refreshData(true);
+        refreshData();
     });
 
     let buttons = document.getElementsByClassName("timeButton");
@@ -196,7 +197,7 @@ function go() {
         if (buttons.hasOwnProperty(b)) {
             buttons[b].addEventListener("click", function() {
                     setDefaultTimestamps(this.id);
-                    refreshData(true);
+                    refreshData();
                 }
             )
         }

@@ -47,9 +47,19 @@ function now() {
 }
 
 function formatNumber(value, dp=4) {
+    // Convert the number to scientific notation if small enough
     return Math.abs(value) < Math.pow(10, -dp) && value !== 0
         ? value.toExponential(dp)
         : parseFloat(value.toFixed(dp)).toString();
+}
+
+function formatNumbers(values, dp=4) {
+    // Format the axis ticks to scientific notation if necessary
+    let formatted = new Array(values.length);
+    for (let i = 0; i < values.length; i++) {
+        formatted[i] = formatNumber(values[i], dp)
+    }
+    return formatted;
 }
 
 async function fetchFromAPI(server, fridge, sensors) {

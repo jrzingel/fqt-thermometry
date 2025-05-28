@@ -84,12 +84,13 @@ def create_dummy_data():
     sensors = db.execute("SELECT id FROM sensor WHERE latest=0").fetchall()
     times = np.linspace(now - 3 * 24 * 60 * 60, now, n)
     for _id in sensors:
+        scale = 1e-4
         id = _id[0]
-        i = 500.0
+        i = 500.0 * scale
         vals = []
         for _ in range(n):
-            i += random.gauss(0, 10)
-            i = max(0.01, i)
+            i += random.gauss(0, 10) * scale
+            i = max(scale / 20, i)
             vals.append(i)
         # Randomly set some values to null to test graphing later
         inx = np.random.randint(0, n, size=(n // 4))

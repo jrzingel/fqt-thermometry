@@ -102,7 +102,6 @@ function setupPlots(num_plots) {
         },
         cursor: cursorOpts,
         series: seriesOpts,
-    {% if not showPressures %}
         scales: {
             y: {
                 distr: 3
@@ -112,7 +111,6 @@ function setupPlots(num_plots) {
             { grid: {show: true} },
             { grid: {show: false} },
         ],
-    {% endif %}
     }
 
     let uplot_main = new uPlot(opts_main, data, document.getElementById("graphs"));

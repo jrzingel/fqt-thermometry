@@ -207,6 +207,8 @@ def listen():
                 else:
                     print("Status log file has an unexpected number of columns. Skipping...")
 
+        # TODO: On older fridges check the valve file to see if the pulse tube is on
+
         time.sleep(1.0)  # Logs only update every minute so no need to check more often
 
 

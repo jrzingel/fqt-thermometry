@@ -15,7 +15,7 @@ class PulseTubeOff(Alert):
         return True  # Default to alarm state (also if no data exists)
 
     @override
-    def try_enable(self):
+    def should_enable(self):
         self.enable_if_cold()
 
     @override

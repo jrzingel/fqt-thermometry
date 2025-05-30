@@ -2,8 +2,18 @@
 from datetime import datetime, timedelta
 import json
 from json import JSONDecodeError
+from enum import Enum
+from unittest import case
 
 import urllib3.exceptions
+
+
+class State(Enum):
+    """Current state of the alert"""
+    DISABLED = 0
+    ENABLED = 1
+    ALARM = 2
+    MANUALLY_DISABLED = 3
 
 
 class Alert(object):
@@ -12,7 +22,9 @@ class Alert(object):
         self.api_url = api_url
         self.fridge = fridge
 
-        self.active = False  # Default to not being enabled (must be not in alarm state to enable, assume fridges nominal)
+        self.state = State.DISABLED
+        self.data = {}  # Contains all the queried data from the API. Should use this between functions to stop querying the server multiple times
+        #self.active = False  # Default to not being enabled (must be not in alarm state to enable, assume fridges nominal)
         self.last_triggered = None
 
     def _get_latest(self, sensor) -> {}:
@@ -43,66 +55,87 @@ class Alert(object):
             #print(f"ERROR Server error {r.status}")
             return {}
 
-    def enable_after_delay(self, cooldown=1):
+    def enable_after_delay(self, cooldown=1) -> bool:
         """Re-enable the alarm if it has not been triggered for an hour"""
-        if self.active is False:
-            if self.last_triggered is None:
-                self.active = True
-                print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} ({self.fridge}) re-enabling.")
-            elif datetime.now() > (self.last_triggered + timedelta(hours=cooldown)):
-                self.active = True
-                print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} ({self.fridge}) re-enabling.")
+        if self.last_triggered is None:
+            return True
+        elif datetime.now() > (self.last_triggered + timedelta(hours=cooldown)):
+            return True
+        return False
 
-    def enable_if_cold(self):
+    def enable_if_cold(self) -> bool:
         """Re-enable the alarm if it is no longer in a state of alarm"""
-        if not self.active:
-            if not self.is_in_alarm():
-                self.active = True
-                print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} ({self.fridge}) re-enabling.")
+        return not self.is_in_alarm()
 
-    def enable_after_delay_and_cold(self, cooldown=1):
+    def enable_after_delay_and_cold(self, cooldown=1) -> bool:
         """Re-enable the alarm if it is both cold and a delay has passed"""
-        if not self.active:
-            if self.last_triggered is None:
-                self.enable_if_cold()
-            elif datetime.now() > (self.last_triggered + timedelta(hours=cooldown)):
-                self.enable_if_cold()
+        if self.last_triggered is None:
+            return self.enable_if_cold()
+        elif datetime.now() > (self.last_triggered + timedelta(hours=cooldown)):
+            return self.enable_if_cold()
+        return False
 
-    def enable_if_below_threshold(self, sensor: str, threshold: float):
+    def enable_if_below_threshold(self, sensor: str, threshold: float) -> bool:
         """Re-enable the alarm if a particular sensor is below a threshold. This threshold should be sufficiently below the alarm point"""
-        if not self.active:
-            measurement = self._get_latest(sensor)
-            if "reading" in measurement.keys() and measurement["reading"] <= threshold:
-                self.active = True
-                print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} ({self.fridge}) re-enabling.")
+        if "reading" in self.data[sensor].keys() and self.data[sensor]["reading"] <= threshold:
+            return True
+        return False
 
-    def activate(self):
-        """Activate the alarm"""
-        if self.active:
-            print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} is in alarm for instance '{self.fridge}'. Sending teams message.")
-            self.active = False
-            self.last_triggered = datetime.now()
+    def update(self) -> bool:
+        """Update the alert control logic. Returns true if the alert changed to alarm."""
+        self.data = self.update_data()
+        # TODO: self.check_for_manual_disable() from the website
+        match self.state:
+            case State.ALARM:
+                if not self.is_in_alarm():
+                    print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} alarm ended for instance '{self.fridge}'.")
+                    if self.should_enable():  # No longer in alarm, enable if appropriate
+                        self.state = State.ENABLED
+                    else:
+                        self.state = State.DISABLED
+            case State.DISABLED:
+                if self.should_enable():
+                    print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} enabling alert for instance '{self.fridge}'.")
+                    self.state = State.ENABLED
+            case State.ENABLED:
+                if self.is_in_alarm():  # Here we go
+                    print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} is in alarm for instance '{self.fridge}'. Sending teams message.")
+                    self.last_triggered = datetime.now()
+                    self.state = State.ALARM
+                    return True
+                elif not self.should_enable():
+                    print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} deactivating for instance '{self.fridge}'.")
+                    self.state = State.DISABLED  # Or disable it otherwise
+            case State.MANUALLY_DISABLED:
+                # TODO: Add logic to check if the alert should be re-enabled
+                pass
+            case _:
+                print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} unknown state of '{self.state.name}'.")
+                pass
+        return False
 
-    def deactivate(self):
-        """Alert is in a state that is no longer sensitive"""
-        if self.active:
-            print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} deactivating for instance '{self.fridge}'.")
-            self.active = False
+    def update_data(self) -> dict:
+        """Query the API to get the latest data available"""
+        raise NotImplementedError
 
-    def try_enable(self):
-        """Try to re-enable the alarm. Make sure that alarm spam doesn't exist"""
+    def should_enable(self) -> bool:
+        """Return if the alert should be enabled. Make sure that alarm spam doesn't exist"""
         # self.enable_after_delay()
         # self.enable_if_cold()
-        pass
+        raise NotImplementedError
 
     def is_in_alarm(self) -> bool:
-        """Return if the alert is in alarm (true) or not (false)"""
-        return False
+        """Return if the alert is in alarm (true) or not (false). Assume the alert is enabled"""
+        raise NotImplementedError
+
+    def describe_condition(self) -> str:
+        """Return the current alert condition in a human-readable format"""
+        raise NotImplementedError
 
     def description(self) -> str:
         """Return the description of the alert (for when triggered)"""
-        return ""
+        raise NotImplementedError
 
     def title(self) -> str:
         """Return the title of the alert (for when triggered)"""
-        return ""
+        raise NotImplementedError

@@ -53,7 +53,7 @@ class MagnetQuench(Alert):
             return self.active  # Default to alarm if activated... otherwise the magnet may not be connected
 
     @override
-    def try_enable(self):
+    def should_enable(self):
         self.enable_if_below_threshold("magnet", 10.0)
 
     @override

@@ -25,7 +25,7 @@ class UnresponsiveFridge(Alert):
         self.activate()
         return True
 
-    def try_enable(self):
+    def should_enable(self):
         self.enable_if_cold()
 
     @property

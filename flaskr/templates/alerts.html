@@ -2,7 +2,7 @@
 
 {% block content %}
 
-    <p>View the status of the FQT Live alerts. Will send a Teams message if any alarm is triggered.</p>
+    <p>View the status of the FQT Live alerts. Will send a Teams message if any alarm is triggered. Last updated at {{ last_updated }}</p>
     <br>
 
     <table class="min-w-full table-auto text-left">
@@ -22,7 +22,7 @@
             <td class="py-3 px-6">{{ alert.fridge.capitalize() }}</td>
             <td class="py-3 px-6">{{ alert.now }}</td>
             <td class="py-3 px-6">{{ alert.condition }}</td>
-          <td class="py-3 px-6 text-xl">{% if alert.state == "ALARM" %}🚨{% elif alert.state == "ENABLED" %}🟢{% else %}⛔{% endif %}</td>
+          <td class="py-3 px-6 text-xl">{% if alert.state == "ALARM" %}🚨{% elif alert.state == "ENABLED" %}🟢{% else %}<span style="filter: grayscale(100%)">🚫</span>{% endif %}</td>
         </tr>
         {% endfor %}
       </tbody>

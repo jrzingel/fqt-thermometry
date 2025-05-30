@@ -89,7 +89,10 @@ class Watchtower:
             } | condition)
 
         with open(fname, "w") as f:
-            f.write(json.dumps(contents, indent=4))
+            f.write(json.dumps({
+                "last_updated": datetime.now().astimezone().isoformat(sep=" ", timespec="seconds"),
+                "alerts": contents
+            }, indent=4))
 
 
 if __name__ == "__main__":
@@ -98,13 +101,14 @@ if __name__ == "__main__":
     local_api = "http://localhost"
     server_api = "http://status.fqt.unsw.edu.au"
 
+    refresh = 30
     #watch = Watchtower(morello_webhook, local_api)
-    watch = Watchtower(test_webhook, server_api)
+    watch = Watchtower(test_webhook, local_api)
     watch.load_config("config.yaml")
 
-    schedule.every(6).seconds.do(watch.lookout)
-    schedule.every(6).seconds.do(watch.status)
-    schedule.every(6).seconds.do(watch.log_status)
+    schedule.every(refresh).seconds.do(watch.lookout)
+    schedule.every(refresh).seconds.do(watch.status)
+    schedule.every(refresh).seconds.do(watch.log_status)
 
     while True:
         schedule.run_pending()

@@ -35,7 +35,7 @@ class HotOilTemp(Alert):
     @property
     def describe_condition(self) -> str:
         if "reading" in self.data["oil_temp"].keys():
-            return f"Oil temp = {self.data['oil_temp']['reading']:.1f} C | Alarm > 38C > Enabled > 35C > Disabled"
+            return f"Oil temp = {self.data['oil_temp']['reading']:.1f} C | Alarm > 38C, 35C > Enabled"
         return ""
 
     @property

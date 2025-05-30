@@ -24,6 +24,6 @@ def dashboard():
 def view_alerts():
     # Load JSON from disk
     with open(current_app.config["ALERT_PATH"], 'r') as f:
-        alerts = json.load(f)
+        status = json.load(f)
 
-    return render_template("alerts.html", alerts=alerts)
+    return render_template("alerts.html", alerts=status["alerts"], last_updated=status["last_updated"])

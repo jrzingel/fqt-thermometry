@@ -13,6 +13,13 @@ from .Alert import Alert
 
 
 class UnresponsiveFridge(Alert):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.last_data_uploaded = None
+
+    def update_data(self) -> dict:
+        return {}
+
     def is_in_alarm(self) -> bool:
         sensors = ["P1", "P3", "50K", "4K"]
         for sensor in sensors:
@@ -21,16 +28,22 @@ class UnresponsiveFridge(Alert):
                 reading_time = datetime.fromisoformat(measurement["time"])
                 if reading_time + timedelta(minutes=5) > datetime.now(timezone.utc):
                     # Reading is fresh (no need to keep checking)
+                    self.last_data_uploaded = reading_time
                     return False
-        self.activate()
         return True
 
-    def try_enable(self):
-        self.enable_if_cold()
+    def should_enable(self):
+        return self.enable_if_cold()
 
     @property
     def description(self) -> str:
         return "There has been no new data uploaded in the past 5 minutes. Check that the thermometry software is running. Alarm disabled until issue resolved."
+
+    @property
+    def describe_condition(self):
+        if self.last_data_uploaded is not None:
+            return f"Last updated = {self.last_data_uploaded.astimezone().isoformat()} | Alarm if not in the last 5 minutes"
+        return ""
 
     @property
     def title(self) -> str:

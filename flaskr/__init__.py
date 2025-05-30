@@ -41,7 +41,7 @@ def create_app():
     app.register_blueprint(dashboard.bp)
 
     @app.route("/")
-    def hello():
+    def root():
         return redirect(url_for("dashboard.dashboard"))
 
     @app.after_request

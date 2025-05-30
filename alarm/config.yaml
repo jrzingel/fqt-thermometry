@@ -4,6 +4,7 @@
 alerts:
   PulseTubeOff:  # requires modern bluefors software with status file
     - venus
+    - winona
 
   MxcAbove1K:
     - queenie

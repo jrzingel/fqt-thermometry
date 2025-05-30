@@ -71,17 +71,25 @@ class Watchtower:
 
     def log_status(self, fname="status.json"):
         """Log the current alert status to a JSON file"""
-        contents = [{
-            "title": alert.title,
-            "type": alert.__class__.__name__,
-            "fridge": alert.fridge,
-            "state": alert.state.name,
-            "condition": alert.describe_condition,
-            "description": alert.description
-        } for alert in self.alerts]
+        contents = []
+
+        for alert in self.alerts:
+            if alert.describe_condition != "" and "|" in alert.describe_condition:
+                splits = alert.describe_condition.split("|")
+                condition = {"now": splits[0].strip(), "condition": splits[1].strip()}
+            else:
+                condition = {"now": "?", "condition": alert.describe_condition}
+
+            contents.append({
+                "title": alert.title,
+                "type": alert.__class__.__name__,
+                "fridge": alert.fridge,
+                "state": alert.state.name,
+                "description": alert.description
+            } | condition)
+
         with open(fname, "w") as f:
             f.write(json.dumps(contents, indent=4))
-
 
 
 if __name__ == "__main__":

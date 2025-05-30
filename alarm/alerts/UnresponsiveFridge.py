@@ -42,7 +42,7 @@ class UnresponsiveFridge(Alert):
     @property
     def describe_condition(self):
         if self.last_data_uploaded is not None:
-            return f"Last updated = {self.last_data_uploaded.isoformat()} | Alarm if not in the last 5 minutes"
+            return f"Last updated = {self.last_data_uploaded.astimezone().isoformat()} | Alarm if not in the last 5 minutes"
         return ""
 
     @property

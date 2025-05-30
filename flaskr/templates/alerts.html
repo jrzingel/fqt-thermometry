@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    <p>View the status of the FQT Live alerts. Will send a Teams message if any alarm is triggered.</p>
+    <br>
+
+    <table class="min-w-full table-auto text-left">
+      <thead class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+        <tr>
+          <th class="py-3 px-6">Title</th>
+            <th class="py-3 px-6">Fridge</th>
+            <th class="py-3 px-6">Now</th>
+            <th class="py-3 px-6">Condition</th>
+            <th class="py-3 px-6">Alarm State</th>
+        </tr>
+      </thead>
+      <tbody class="text-gray-700">
+        {% for alert in alerts %}
+        <tr class="border-b hover:bg-gray-100">
+          <td class="py-3 px-6">{{ alert.title }}</td>
+            <td class="py-3 px-6">{{ alert.fridge.capitalize() }}</td>
+            <td class="py-3 px-6">{{ alert.now }}</td>
+            <td class="py-3 px-6">{{ alert.condition }}</td>
+          <td class="py-3 px-6 text-xl">{% if alert.state == "ALARM" %}🚨{% elif alert.state == "ENABLED" %}🟢{% else %}⛔{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+
+{% endblock %}

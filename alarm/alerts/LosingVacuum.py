@@ -46,6 +46,7 @@ class LosingVacuum(Alert):
     def describe_condition(self):
         if "reading" in self.data["P1"].keys():
             return f"P1 = {self.data['P1']['reading']} mBar | Alarm > 1e-5 mBar, Enabled < 8e-6 mBar"
+        return ""
 
     @property
     def title(self) -> str:

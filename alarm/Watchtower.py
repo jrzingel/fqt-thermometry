@@ -69,6 +69,20 @@ class Watchtower:
             for alert in self.alerts:
                 f.write(f"- {alert.__class__.__name__} @ {alert.fridge}: {alert.state.name} \t{alert.describe_condition}\n")
 
+    def log_status(self, fname="status.json"):
+        """Log the current alert status to a JSON file"""
+        contents = [{
+            "title": alert.title,
+            "type": alert.__class__.__name__,
+            "fridge": alert.fridge,
+            "state": alert.state.name,
+            "condition": alert.describe_condition,
+            "description": alert.description
+        } for alert in self.alerts]
+        with open(fname, "w") as f:
+            f.write(json.dumps(contents, indent=4))
+
+
 
 if __name__ == "__main__":
     morello_webhook = "https://prod-58.australiasoutheast.logic.azure.com:443/workflows/b051ee511eb440c7acd48c3169746c5b/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=C57BECtucQyq-WnDmi35NKyk2-Q8MNo-kaVuFk3PSp4"
@@ -82,6 +96,7 @@ if __name__ == "__main__":
 
     schedule.every(6).seconds.do(watch.lookout)
     schedule.every(6).seconds.do(watch.status)
+    schedule.every(6).seconds.do(watch.log_status)
 
     while True:
         schedule.run_pending()

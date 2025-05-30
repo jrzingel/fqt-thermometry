@@ -26,6 +26,7 @@ class MxcAbove1K(Alert):
     def describe_condition(self):
         if "reading" in self.data["mxc"].keys():
             return f"mxc = {self.data['mxc']['reading']*1000} mK | Alarm > 1.0 K, 0.9 K > Enabled"
+        return ""
 
     @property
     def title(self) -> str:

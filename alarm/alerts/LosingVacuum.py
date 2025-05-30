@@ -13,8 +13,8 @@ from .Alert import Alert
 # so you really need it to be greater than threshold for two consecutive measurements
 
 class LosingVacuum(Alert):
-    def __init__(self, http, api_url, fridge):
-        super().__init__(http, api_url, fridge)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.pre_alarm = False  # Used if the last state was alarm too
 
     def update_data(self) -> dict:

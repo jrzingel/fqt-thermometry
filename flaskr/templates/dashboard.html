@@ -90,7 +90,7 @@ function setupPlots(num_plots) {
             label: capitalize(SENSORS[i - 1]),
             stroke: COLOURS[i - 1],
             spanGaps: true,
-            value: (u, v) => v == null ? '' : formatNumber(v, dp=4) + UNIT
+            value: (u, v) => v == null ? '' : formatNumber(v, dp=4) + " " + MAIN_UNIT
         });
     }
 
@@ -132,7 +132,7 @@ function setupPlots(num_plots) {
                     label: capitalize(SENSORS[i]),
                     stroke: COLOURS[i],
                     spanGaps: true,
-                    value: (u, v) => v == null ? '' : formatNumber(v, dp=4) + UNIT,
+                    value: (u, v) => v == null ? '' : formatNumber(v, dp=4) + " " + UNITS[i],
                 }
             ],
             axes: [
@@ -173,7 +173,7 @@ function go() {
                 plots[0].setData(data, resetScales=!isZoomed);
                 for (let i = 0; i < SENSORS.length; i++) {
                     let pI = SUBPLOT_ORDER[i]
-                    plots[1][i].setData([data[0], data[pI+1]], resetScales=!isZoomed);
+                    plots[1][i].setData([data[0], data[pI+1].map(x => x * RESCALE[pI])], resetScales=!isZoomed);
                 }
                 status.textContent = "";
             })
@@ -214,13 +214,17 @@ const COLOURS = ["blue", "red", "green", "purple", "orange", "pink"];
 {% if showPressures %}
     const TITLE = "Pressures (mbar)";
     const SENSORS = ["P1", "P2", "P3", "P4", "P5", "P6"];
+    const RESCALE = [1, 1, 1, 1, 1, 1];
     const SUBPLOT_ORDER = [0, 1, 2, 3, 4, 5];
-    const UNIT = ' mBar';
+    const UNITS = ['mBar', 'mBar', 'mBar', 'mBar', 'mBar', 'mBar'];
+    const MAIN_UNIT = "mBar";
 {% else %}
     const SENSORS = ["50K", "4K", "magnet", "still", "mxc"];
+    const RESCALE = [1, 1, 1, 1, 1000];
     const TITLE = "Temperatures (K)";
     const SUBPLOT_ORDER = [0, 1, 3, 4, 2];
-    const UNIT = ' K';
+    const UNITS = ['K', 'K', 'K', 'K', 'mK'];
+    const MAIN_UNIT = "K";
 {% endif %}
 
 

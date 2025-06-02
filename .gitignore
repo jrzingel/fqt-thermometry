@@ -6,3 +6,6 @@ __pycache__/
 .run/
 .env/
 status.txt
+status.json
+*.log
+listener.spec

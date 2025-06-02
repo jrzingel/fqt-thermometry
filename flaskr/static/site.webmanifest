@@ -1,6 +1,6 @@
 {
-  "name": "FQT Thermometry",
-  "short_name": "FQT Thermometry",
+  "name": "FQT Status",
+  "short_name": "FQT Status",
   "icons": [
     {
       "src": "/static/web-app-manifest-192x192.png",
@@ -15,7 +15,7 @@
       "purpose": "maskable"
     }
   ],
-  "theme_color": "#a8d9ee",
-  "background_color": "#ffffff",
+  "theme_color": "#81d1e3",
+  "background_color": "#81d1e3",
   "display": "standalone"
 }

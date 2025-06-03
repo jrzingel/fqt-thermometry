@@ -173,7 +173,7 @@ function go() {
                 plots[0].setData(data, resetScales=!isZoomed);
                 for (let i = 0; i < SENSORS.length; i++) {
                     let pI = SUBPLOT_ORDER[i]
-                    plots[1][i].setData([data[0], data[pI+1].map(x => x * RESCALE[pI])], resetScales=!isZoomed);
+                    plots[1][i].setData([data[0], data[pI+1].map(x => x == null ? null : x * RESCALE[pI])], resetScales=!isZoomed);
                 }
                 status.textContent = "";
             })

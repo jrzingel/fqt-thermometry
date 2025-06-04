@@ -8,4 +8,4 @@ __pycache__/
 status.txt
 status.json
 *.log
-listener.spec
+*.spec

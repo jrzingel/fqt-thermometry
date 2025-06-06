@@ -2,7 +2,7 @@
 # Copied and pasted onto the fridge PCs.
 # For an up-to-date version, check the repository on GitHub : https://github.com/jrzingel/fqt-thermometry
 
-__VERSION__ = 1.5
+__VERSION__ = 1.6
 
 import os
 import sys
@@ -204,6 +204,10 @@ def listen():
                         upload_reading(read_time, fridge, "oil_temp", celsius_or_kelvin_to_celsius(records["cpatempo"]), secret)  # CELSIUS
                     if "cparun" in records.keys():  # compressor running (newer, meaning pulse tube is on)
                         upload_reading(read_time, fridge, "pulse_on", records["cparun"], secret)
+                    if "cptempwi" in records.keys():  # compressor water input (older)
+                        upload_reading(read_time, fridge, "water_temp", celsius_or_kelvin_to_celsius(records["cptempwi"]), secret)  # KELVIN
+                    if "cpatempwi" in records.keys():  # compressor water input (newer)
+                        upload_reading(read_time, fridge, "water_temp", celsius_or_kelvin_to_celsius(records["cpatempwi"]), secret)  # CELSIUS
                 else:
                     print("Status log file has an unexpected number of columns. Skipping...")
 

@@ -27,6 +27,8 @@ alerts:
     - venus
     - winona
 
+  #HotWaterTemp:
+
   LosingVacuum:
     - queenie
     - scarlett

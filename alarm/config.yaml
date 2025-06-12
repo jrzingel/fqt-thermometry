@@ -26,8 +26,12 @@ alerts:
     - tallulah
     - venus
     - winona
+    - winona2
 
-  #HotWaterTemp:
+  HotWaterTemp:
+    - scarlett
+    - winona
+    - winona2
 
   LosingVacuum:
     - queenie

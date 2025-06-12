@@ -69,6 +69,10 @@ def create_default_fridges():
             add_sensor(sensor, f_id, 0)
         for sensor in latest_sensors:
             add_sensor(sensor, f_id, 1)
+            
+    winona2_id = add_fridge("winona2")
+    for sensor in ["pulse_on", "oil_temp", "water_temp"]:  # We only need the compressor settings
+        add_sensor(sensor, winona2_id, 1)
 
 
 def create_dummy_data():

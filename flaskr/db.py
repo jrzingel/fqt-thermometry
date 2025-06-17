@@ -137,8 +137,7 @@ def fetch_readings(query: list[tuple], earliest_stamp: int, latest_stamp: int, b
     df = pd.DataFrame(result, columns=['fridge', 'sensor', 'time', 'reading'])
     df['time'] = (df['time'] // bin) * bin  # bin the times
 
-    #df["fridge_sensor"] = df["fridge"] + "_" + df["sensor"]
-    pivoted = df.pivot(index='time', columns=['fridge', 'sensor'], values='reading')
+    pivoted = df.pivot_table(index='time', columns=['fridge', 'sensor'], values='reading', aggfunc='first')
 
     # Make sure that all the request parameters are full (even if there is no data)
     for (f, s) in query:

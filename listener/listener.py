@@ -2,7 +2,7 @@
 # Copied and pasted onto the fridge PCs.
 # For an up-to-date version, check the repository on GitHub : https://github.com/jrzingel/fqt-thermometry
 
-__VERSION__ = 1.6
+__VERSION__ = 1.7
 
 import os
 import sys
@@ -119,6 +119,7 @@ def listen():
     """Listen for new readings by watching the log files"""
     if not os.path.exists(CONFIG_FILE):
         print(f"Config file '{CONFIG_FILE}' does not exist. Make sure that this file exists, and then try again.")
+        time.sleep(60)
         return
 
     with open(CONFIG_FILE, "r") as f:
@@ -126,6 +127,7 @@ def listen():
             config = yaml.safe_load(f)
         except yaml.YAMLError as e:
             print(f"Failed to load configuration file: {e}")
+            time.sleep(60)
             return
 
     fridge = config["fridge"]
@@ -208,6 +210,14 @@ def listen():
                         upload_reading(read_time, fridge, "water_temp", celsius_or_kelvin_to_celsius(records["cptempwi"]), secret)  # KELVIN
                     if "cpatempwi" in records.keys():  # compressor water input (newer)
                         upload_reading(read_time, fridge, "water_temp", celsius_or_kelvin_to_celsius(records["cpatempwi"]), secret)  # CELSIUS
+
+                    # Optionally check the second compressor status if it exists (for XLD systems)
+                    if "cparun_2" in records.keys():
+                        upload_reading(read_time, fridge + "2", "pulse_on", records["cparun_2"], secret)
+                    if "cpatempo_2" in records.keys():
+                        upload_reading(read_time, fridge + "2", "oil_temp", celsius_or_kelvin_to_celsius(records["cpatempo_2"]), secret)  # CELSIUS
+                    if "cpatempwi_2" in records.keys():
+                        upload_reading(read_time, fridge + "2", "water_temp", celsius_or_kelvin_to_celsius(records["cpatempwi_2"]), secret)  # CELSIUS
                 else:
                     print("Status log file has an unexpected number of columns. Skipping...")
 

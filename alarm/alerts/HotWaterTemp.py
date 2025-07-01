@@ -27,7 +27,10 @@ class HotWaterTemp(Alert):
         return True  # Default to alarm state (also if no data exists)
 
     def should_enable(self):
-        return self.enable_if_below_threshold("water_temp", 19.0)
+        return self.if_below_threshold("water_temp", 19.0)
+
+    def should_disable(self) -> bool:
+        return False  # Never disable if active
 
     @property
     def description(self) -> str:

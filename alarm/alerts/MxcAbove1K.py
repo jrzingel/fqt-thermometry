@@ -16,7 +16,10 @@ class MxcAbove1K(Alert):
         return True  # Default to alarm state (also if no data exists)
 
     def should_enable(self) -> bool:
-        return self.enable_if_below_threshold("mxc", 0.9)
+        return self.if_below_threshold("mxc", 0.9)
+
+    def should_disable(self) -> bool:
+        return self.if_above_threshold("mxc", 100)
 
     @property
     def description(self) -> str:

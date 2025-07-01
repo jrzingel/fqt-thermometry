@@ -25,7 +25,7 @@ class LosingVacuum(Alert):
     def is_in_alarm(self) -> bool:
         # check if it is > 1e-5
         if "reading" in self.data["P1"].keys():
-            if self.data["P1"]["reading"] > 1.0e-5:
+            if self.data["P1"]["reading"] > 10.0e-6:
                 if self.pre_alarm:  # Meaning that the last check was triggered too
                     return True
                 else:
@@ -37,10 +37,13 @@ class LosingVacuum(Alert):
         return True  # Default to being in alarm
 
     def should_enable(self) -> bool:
-        if self.enable_if_below_threshold("P1", 8.0e-6):
+        if self.if_below_threshold("P1", 8.0e-6):
             self.pre_alarm = False
             return True
         return False
+
+    def should_disable(self) -> bool:
+        return self.if_above_threshold("P1", 100.0e-6)
 
     @property
     def description(self) -> str:

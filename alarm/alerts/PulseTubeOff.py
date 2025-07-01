@@ -16,7 +16,10 @@ class PulseTubeOff(Alert):
         return True  # Default to alarm state (also if no data exists)
 
     def should_enable(self):
-        return self.enable_if_cold()
+        return self.if_cold()
+
+    def should_disable(self):
+        return False  # Never disable once the pulse tube is running
 
     @property
     def description(self) -> str:

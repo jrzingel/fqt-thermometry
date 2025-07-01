@@ -54,7 +54,7 @@ class MagnetQuench(Alert):
 
     @override
     def should_enable(self):
-        self.enable_if_below_threshold("magnet", 10.0)
+        self.if_below_threshold("magnet", 10.0)
 
     @override
     @property

@@ -55,7 +55,7 @@ class Alert(object):
             #print(f"ERROR Server error {r.status}")
             return {}
 
-    def enable_after_delay(self, cooldown=1) -> bool:
+    def if_after_delay(self, cooldown=1) -> bool:
         """Re-enable the alarm if it has not been triggered for an hour"""
         if self.last_triggered is None:
             return True
@@ -63,21 +63,27 @@ class Alert(object):
             return True
         return False
 
-    def enable_if_cold(self) -> bool:
+    def if_cold(self) -> bool:
         """Re-enable the alarm if it is no longer in a state of alarm"""
         return not self.is_in_alarm()
 
-    def enable_after_delay_and_cold(self, cooldown=1) -> bool:
+    def if_after_delay_and_cold(self, cooldown=1) -> bool:
         """Re-enable the alarm if it is both cold and a delay has passed"""
         if self.last_triggered is None:
-            return self.enable_if_cold()
+            return self.if_cold()
         elif datetime.now() > (self.last_triggered + timedelta(hours=cooldown)):
-            return self.enable_if_cold()
+            return self.if_cold()
         return False
 
-    def enable_if_below_threshold(self, sensor: str, threshold: float) -> bool:
+    def if_below_threshold(self, sensor: str, threshold: float) -> bool:
         """Re-enable the alarm if a particular sensor is below a threshold. This threshold should be sufficiently below the alarm point"""
         if "reading" in self.data[sensor].keys() and self.data[sensor]["reading"] <= threshold:
+            return True
+        return False
+
+    def if_above_threshold(self, sensor: str, threshold: float) -> bool:
+        """Re-enable the alarm if a particular sensor is above a threshold. This threshold should be sufficiently below the alarm point"""
+        if "reading" in self.data[sensor].keys() and self.data[sensor]["reading"] >= threshold:
             return True
         return False
 
@@ -93,6 +99,9 @@ class Alert(object):
                         self.state = State.ENABLED
                     else:
                         self.state = State.DISABLED
+                elif self.should_disable():
+                    print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} deactivating for instance '{self.fridge}'.")
+                    self.state = State.DISABLED  # Or disable it otherwise
             case State.DISABLED:
                 if self.should_enable():
                     print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} enabling alert for instance '{self.fridge}'.")
@@ -103,7 +112,7 @@ class Alert(object):
                     self.last_triggered = datetime.now()
                     self.state = State.ALARM
                     return True
-                elif not self.should_enable():
+                elif self.should_disable():
                     print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} deactivating for instance '{self.fridge}'.")
                     self.state = State.DISABLED  # Or disable it otherwise
             case State.MANUALLY_DISABLED:
@@ -120,8 +129,11 @@ class Alert(object):
 
     def should_enable(self) -> bool:
         """Return if the alert should be enabled. Make sure that alarm spam doesn't exist"""
-        # self.enable_after_delay()
-        # self.enable_if_cold()
+        # return self.if_cold()
+        raise NotImplementedError
+
+    def should_disable(self) -> bool:
+        """Return if the alert should be disabled. Make sure that alarm spam doesn't exist'"""
         raise NotImplementedError
 
     def is_in_alarm(self) -> bool:

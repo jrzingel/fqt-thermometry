@@ -33,7 +33,10 @@ class UnresponsiveFridge(Alert):
         return True
 
     def should_enable(self):
-        return self.enable_if_cold()
+        return self.if_cold()
+
+    def should_disable(self):
+        return False  # Never disable
 
     @property
     def description(self) -> str:

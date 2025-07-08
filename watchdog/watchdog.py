@@ -6,18 +6,22 @@ from datetime import datetime
 import time
 import schedule
 
+VERSION = "1.0"
 
-LOG_FILE = r"C:\Users\z5653624\OneDrive - UNSW\phd\gits\thermometry\watchdog\watchdog.log"
+LOG_FILE = "watchdog.log"
 SERVER_LOCATION = "http://status.fqt.unsw.edu.au"
 PRIVATE_TEAMS_WEBHOOK = "https://prod-38.australiasoutheast.logic.azure.com:443/workflows/4864832cab2141d395e86f5a95b4f561/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Z0UNCfaQ_5O6DVT3yzeee2qAxgO1S0rnBmYIZuwBb1o"
-TEAMS_WEBHOOK = PRIVATE_TEAMS_WEBHOOK
+MORELLO_WEBHOOK = "https://prod-58.australiasoutheast.logic.azure.com:443/workflows/b051ee511eb440c7acd48c3169746c5b/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=C57BECtucQyq-WnDmi35NKyk2-Q8MNo-kaVuFk3PSp4"
+
+# Select where to post the message
+TEAMS_WEBHOOK = MORELLO_WEBHOOK
 
 
 def check_alive():
     """Ping the server and check that it is alive"""
     url = f"{SERVER_LOCATION}/api/v1/ping"
     try:
-        response = requests.get(url, timeout=10.0)
+        response = requests.get(url, timeout=30.0)
     except requests.exceptions.RequestException as e:
         return False
     if response.status_code != 200:
@@ -36,13 +40,13 @@ def log(message: str):
 def send_teams_alert():
     """The server is done. Message me."""
     time = datetime.now().strftime("%a %d.%m.%Y, %H:%M:%S")
-    message = f"<blockquote>[{time}]</blockquote> <h1><strong>FQT Website Down</strong>🔔</h1>\n \n Yeah, the website is down... you might want to fix this ASAP."
+    message = f"<blockquote>[{time}]</blockquote> <h1><strong>FQT Website Down</strong>🔔</h1>\n \nThermometry website is unreachable... this should be addressed ASAP. Contact James."
     headers = {"Content-Type": "application/json"}
     r = requests.post(
         TEAMS_WEBHOOK,
         json={"text": message},
         headers=headers,
-        timeout=10)
+        timeout=30)
     if r.status_code < 300:
         log("Successfully sent message")
     else:
@@ -54,6 +58,7 @@ def watch():
     global sent_alert
     if check_alive():
         sent_alert = False
+        log("Server is alive")
     else:
         log("Server is down. Time to panic")
         if not sent_alert:
@@ -62,6 +67,7 @@ def watch():
 
 
 if __name__ == "__main__":
+    log(f"Version: {VERSION}")
     log("Watchdog starting...")
 
     sent_alert = False

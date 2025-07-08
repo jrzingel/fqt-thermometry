@@ -2,31 +2,76 @@
 
 {% block content %}
 
-    <p>View the status of the FQT Live alerts. Will send a Teams message if any alarm is triggered. Last updated at {{ last_updated }}</p>
+    <p>View the status of the FQT Live alerts. Will send a Teams message if any alarm is triggered. Manually disable if the necessary. Last updated at {{ last_updated }}</p>
     <br>
 
-    <table class="min-w-full table-auto text-left">
-      <thead class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
-        <tr>
-          <th class="py-3 px-6">Title</th>
-            <th class="py-3 px-6">Fridge</th>
-            <th class="py-3 px-6">Now</th>
-            <th class="py-3 px-6">Condition</th>
-            <th class="py-3 px-6">Alarm State</th>
-        </tr>
-      </thead>
-      <tbody class="text-gray-700">
-        {% for alert in alerts %}
-        <tr class="border-b hover:bg-gray-100">
-          <td class="py-3 px-6">{{ alert.title }}</td>
-            <td class="py-3 px-6">{{ alert.fridge.capitalize() }}</td>
-            <td class="py-3 px-6">{{ alert.now }}</td>
-            <td class="py-3 px-6">{{ alert.condition }}</td>
-          <td class="py-3 px-6 text-xl">{% if alert.state == "ALARM" %}🚨{% elif alert.state == "ENABLED" %}🟢{% else %}<span style="filter: grayscale(100%)">🚫</span>{% endif %}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <form method="post" id="actionForm">
+        <table class="min-w-full table-auto text-left">
+          <thead class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+            <tr>
+              <th class="py-3 px-6">Alert</th>
+                <th class="py-3 px-6">Fridge</th>
+                <th class="py-3 px-6">Now</th>
+                <th class="py-3 px-6">Condition</th>
+                <th class="py-3 px-6">Alarm State</th>
+                <th class="py-3 px-3">Disable</th>
+            </tr>
+          </thead>
+          <tbody class="text-gray-700">
+            {% for alert in alerts %}
+            <tr class="border-b hover:bg-gray-100">
+                <td class="py-3 px-6">{{ alert.title }}</td>
+                <td class="py-3 px-6">{{ alert.fridge.capitalize() }}</td>
+                <td class="py-3 px-6">{{ alert.now }}</td>
+                <td class="py-3 px-6">{{ alert.condition }}</td>
+                <td class="py-3 px-6 text-xl">{% if alert.state == "ALARM" %}🚨{% elif alert.state == "ENABLED" %}🟢{% elif alert.state == "DISABLED" %}<span style="filter: grayscale(100%)">🚫</span>{% else %}🔕{% endif %}</td>
+                <td class="py-3 px-3">
+                    <input type="checkbox" name="action"
+                           value="{{ alert.type }}.{{ alert.fridge }}"
+                           {% if alert.state == 'MANUALLY_DISABLED' %}checked{% endif %}>
+                </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+    </form>
 
+    <script>
+        document.getElementById("actionForm").addEventListener("change", function(e) {
+            if (e.target.type === "checkbox") {
+                if (confirm('Are you sure you want to enable/disable this alert?\n Changes take approx 1 minute to apply. Please check back later.')) {
+                    console.log('Requesting alert status change');
 
+                    const data = {
+                        name: e.target.name,
+                        value: e.target.value,
+                        checked: e.target.checked
+                    };
+
+                    fetch("{{ url_for("dashboard.action_alert") }}", {
+                        method: "POST",
+                        headers: {"Content-Type": "application/json"},
+                        body: JSON.stringify(data)
+                    });
+                }
+            }
+        });
+
+    </script>
+
+    <script>
+        // Reload every minute and save the scroll position
+        function timedReload() {
+          sessionStorage.setItem("scrollY", window.scrollY);
+          location.reload();
+        }
+
+        // Restore scroll after reload
+        window.onload = () => {
+          const y = sessionStorage.getItem("scrollY");
+          if (y !== null) window.scrollTo(0, +y);
+        };
+
+        setInterval(timedReload, 60000);
+    </script>
 {% endblock %}

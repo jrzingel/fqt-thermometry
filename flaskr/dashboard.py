@@ -1,6 +1,8 @@
 # HTML/CSS template renderer methods
 
+import os
 from flask import Blueprint, render_template, request, current_app, jsonify, abort
+import time
 import json
 
 bp = Blueprint("dashboard", __name__, url_prefix="/dashboard")
@@ -20,8 +22,39 @@ def dashboard():
         return render_template("dashboard.html", fridge=fridge, title=f"{fridge.title()} Fridge Status", url=request.url_root, showPressures=showPressures)
 
 
+@bp.post("/alerts/action")
+def action_alert():
+    # Apply the action of enabling or disabling the alert
+    action = request.get_json()
+
+    splits = action["value"].split(".")
+    if len(splits) != 2:
+        return "Unknown action type", 500
+
+    alertType = splits[0]
+    fridge = splits[1]
+    state = "MANUALLY_DISABLED" if action["checked"] else "DISABLED"
+
+    # Write the update to the log file for the alert code to read and process it
+    if os.path.getsize(current_app.config["ALERT_CHANGE_PATH"]) > 0:
+        with open(current_app.config["ALERT_CHANGE_PATH"], "r") as f:
+            current_changes = json.load(f)  # Get current changes requested
+    else:
+        current_changes = []
+
+    with open(current_app.config["ALERT_CHANGE_PATH"], "w") as f:
+        f.write(json.dumps(current_changes + [{  # Add our change
+            "type": alertType,
+            "fridge": fridge,
+            "action": state
+        }]))
+    time.sleep(2)  # Wait for dramatic effect
+    return '', 204
+
+
 @bp.route("/alerts")
 def view_alerts():
+    # Display the alert view
     # Load JSON from disk
     with open(current_app.config["ALERT_PATH"], 'r') as f:
         status = json.load(f)

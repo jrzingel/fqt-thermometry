@@ -3,8 +3,6 @@ from datetime import datetime, timedelta
 import json
 from json import JSONDecodeError
 from enum import Enum
-from unittest import case
-
 import urllib3.exceptions
 
 
@@ -21,11 +19,13 @@ class Alert(object):
         self.http = http
         self.api_url = api_url
         self.fridge = fridge
-
-        self.state = State.DISABLED
-        self.data = {}  # Contains all the queried data from the API. Should use this between functions to stop querying the server multiple times
-        #self.active = False  # Default to not being enabled (must be not in alarm state to enable, assume fridges nominal)
         self.last_triggered = None
+
+        # Default to not being enabled (must be not in alarm state to enable, assume fridges nominal)
+        self.state = State.DISABLED
+
+        # Contains all the queried data from the API. Should use this between functions to stop querying the server multiple times
+        self.data = self.update_data()
 
     def _get_latest(self, sensor) -> {}:
         """Common code to fetch the latest reading from the server"""
@@ -116,7 +116,7 @@ class Alert(object):
                     print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} deactivating for instance '{self.fridge}'.")
                     self.state = State.DISABLED  # Or disable it otherwise
             case State.MANUALLY_DISABLED:
-                # TODO: Add logic to check if the alert should be re-enabled
+                # Stay this way until manually moved back into being DISABLED
                 pass
             case _:
                 print(f"[{datetime.now().isoformat()}] {self.__class__.__name__} unknown state of '{self.state.name}'.")

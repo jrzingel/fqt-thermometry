@@ -1,6 +1,6 @@
 # HTML/CSS template renderer methods
 
-from flask import Blueprint, render_template, request, current_app
+from flask import Blueprint, render_template, request, current_app, jsonify, abort
 import json
 
 bp = Blueprint("dashboard", __name__, url_prefix="/dashboard")
@@ -27,3 +27,22 @@ def view_alerts():
         status = json.load(f)
 
     return render_template("alerts.html", alerts=status["alerts"], last_updated=status["last_updated"])
+
+
+@bp.route("/alerts/<string:alert_type>.json")
+def view_alert(alert_type: str):
+    # Load JSON from disk
+    with open(current_app.config["ALERT_PATH"], 'r') as f:
+        status = json.load(f)
+
+    if "alerts" not in status.keys() or "last_updated" not in status.keys():
+        return "Alerts are not available", 500
+
+    alerts = []
+    for alert in status["alerts"]:
+        if alert["type"] == alert_type or alert_type == "all":
+            alerts.append(alert)
+    return jsonify({
+        "alerts": alerts,
+        "last_updated": status["last_updated"]
+    })

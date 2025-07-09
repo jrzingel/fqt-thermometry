@@ -29,7 +29,7 @@
                     <label>
                         <input type="checkbox" name="action"
                                value="{{ alert.type }}.{{ alert.fridge }}"
-                               class="sr-only"
+                               class="hidden"
                                {% if alert.state == 'MANUALLY_DISABLED' %}checked{% endif %}>
 
                         {% if alert.state == 'MANUALLY_DISABLED' %}

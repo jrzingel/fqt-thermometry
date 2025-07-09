@@ -66,7 +66,6 @@ class Watchtower:
     def apply_changes(self, fname="changes.json"):
         """Apply the changes to the alerts from the website"""
         if os.path.getsize(fname) == 0:  # File is empty, no changes necessary to apply
-            print(f"[{datetime.now().isoformat()}] No changes found")
             return
 
         with open(fname, "r") as f:
@@ -123,10 +122,11 @@ if __name__ == "__main__":
     morello_webhook = "https://prod-58.australiasoutheast.logic.azure.com:443/workflows/b051ee511eb440c7acd48c3169746c5b/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=C57BECtucQyq-WnDmi35NKyk2-Q8MNo-kaVuFk3PSp4"
     test_webhook = "https://prod-38.australiasoutheast.logic.azure.com:443/workflows/4864832cab2141d395e86f5a95b4f561/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Z0UNCfaQ_5O6DVT3yzeee2qAxgO1S0rnBmYIZuwBb1o"
     local_api = "http://localhost:5000"
+    local_server_api = "http://localhost"
     server_api = "http://status.fqt.unsw.edu.au"
 
-    #watch = Watchtower(morello_webhook, local_api)
-    watch = Watchtower(test_webhook, local_api)
+    watch = Watchtower(morello_webhook, local_server_api)
+    #watch = Watchtower(test_webhook, local_api)
     watch.load_config("config.yaml")
 
     schedule.every(30).seconds.do(watch.lookout)

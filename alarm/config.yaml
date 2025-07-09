@@ -2,6 +2,13 @@
 
 
 alerts:
+  Critical:
+    - queenie
+    - scarlett
+    - tallulah
+    - venus
+    - winona
+
   PulseTubeOff:  # requires modern bluefors software with status file
     - venus
     - winona

@@ -125,8 +125,8 @@ if __name__ == "__main__":
     local_server_api = "http://localhost"
     server_api = "http://status.fqt.unsw.edu.au"
 
-    watch = Watchtower(morello_webhook, local_server_api)
-    #watch = Watchtower(test_webhook, local_api)
+    #watch = Watchtower(morello_webhook, local_server_api)
+    watch = Watchtower(test_webhook, server_api)
     watch.load_config("config.yaml")
 
     schedule.every(30).seconds.do(watch.lookout)

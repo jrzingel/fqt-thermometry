@@ -48,7 +48,7 @@
     <script>
         document.getElementById("actionForm").addEventListener("change", function(e) {
             if (e.target.type === "checkbox") {
-                if (confirm('Are you sure you want to enable/disable this alert?\n Changes take approx 1 minute to apply. Please check back later.')) {
+                if (confirm('Are you sure you want to enable/disable this alert?\nChanges take up to 1 minute to apply. Please check back later.')) {
                     console.log('Requesting alert status change');
 
                     const data = {

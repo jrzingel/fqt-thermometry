@@ -5,6 +5,7 @@ from .HotOilTemp import HotOilTemp
 from .LosingVacuum import LosingVacuum
 from .MagnetQuench import MagnetQuench
 from .HotWaterTemp import HotWaterTemp
+from .Critical import Critical
 from .Alert import State
 
-__all__ = ['State', 'PulseTubeOff', 'MxcAbove1K', 'UnresponsiveFridge', 'HotOilTemp', 'LosingVacuum', 'MagnetQuench', 'HotWaterTemp']
+__all__ = ['State', 'PulseTubeOff', 'MxcAbove1K', 'UnresponsiveFridge', 'HotOilTemp', 'LosingVacuum', 'MagnetQuench', 'HotWaterTemp', 'Critical']

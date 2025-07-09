@@ -1,14 +1,16 @@
 # HTML/CSS template renderer methods
 
 import os
-from flask import Blueprint, render_template, request, current_app, jsonify, abort
+from apiflask import APIBlueprint, Schema, fields
+from flask import render_template, request, current_app, jsonify, abort
 import time
 import json
 
-bp = Blueprint("dashboard", __name__, url_prefix="/dashboard")
+bp = APIBlueprint("dashboard", __name__, url_prefix="/dashboard")
 
 
 @bp.route("/")
+@bp.doc(summary="Get HTML page of the dashboard with javascript charts")
 def dashboard():
     fridge = request.args.get('fridge', type=str)
     data_type = request.args.get('type', type=str)
@@ -22,7 +24,16 @@ def dashboard():
         return render_template("dashboard.html", fridge=fridge, title=f"{fridge.title()} Fridge Status", url=request.url_root, showPressures=showPressures)
 
 
+class DisabledSchema(Schema):
+    """Schema for requesting an alert to be disabled or not"""
+    name = fields.String(required=False, default="action")
+    value = fields.String(required=True, default="TYPE.FRIDGE")
+    checked = fields.Boolean(default=False)
+
+
 @bp.post("/alerts/action")
+@bp.input(DisabledSchema)
+@bp.doc(summary="Process an alert status change to be manually disabled or not. This is submitted by the HTML form")
 def action_alert():
     # Apply the action of enabling or disabling the alert
     action = request.get_json()
@@ -53,6 +64,7 @@ def action_alert():
 
 
 @bp.route("/alerts")
+@bp.doc(summary="Get a HTML page of all the alerts")
 def view_alerts():
     # Display the alert view
     # Load JSON from disk
@@ -62,7 +74,8 @@ def view_alerts():
     return render_template("alerts.html", alerts=status["alerts"], last_updated=status["last_updated"])
 
 
-@bp.route("/alerts/<string:alert_type>.json")
+@bp.get("/alerts/<string:alert_type>.json")
+@bp.doc(summary="Get JSON status for a specific type of alert. Use 'all' to get all alerts")
 def view_alert(alert_type: str):
     # Load JSON from disk
     with open(current_app.config["ALERT_PATH"], 'r') as f:

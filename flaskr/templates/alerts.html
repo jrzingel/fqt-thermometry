@@ -14,7 +14,7 @@
                 <th class="py-3 px-6">Now</th>
                 <th class="py-3 px-6">Condition</th>
                 <th class="py-3 px-6">Alarm State</th>
-                <th class="py-3 px-3">Disable</th>
+                <th class="py-3 px-3">Enabled</th>
             </tr>
           </thead>
           <tbody class="text-gray-700">
@@ -25,10 +25,19 @@
                 <td class="py-3 px-6">{{ alert.now }}</td>
                 <td class="py-3 px-6">{{ alert.condition }}</td>
                 <td class="py-3 px-6 text-xl">{% if alert.state == "ALARM" %}🚨{% elif alert.state == "ENABLED" %}🟢{% elif alert.state == "DISABLED" %}<span style="filter: grayscale(100%)">🚫</span>{% else %}🔕{% endif %}</td>
-                <td class="py-3 px-3">
-                    <input type="checkbox" name="action"
-                           value="{{ alert.type }}.{{ alert.fridge }}"
-                           {% if alert.state == 'MANUALLY_DISABLED' %}checked{% endif %}>
+                <td class="py-3 px-3 text-xl">
+                    <label>
+                        <input type="checkbox" name="action"
+                               value="{{ alert.type }}.{{ alert.fridge }}"
+                               class="sr-only"
+                               {% if alert.state == 'MANUALLY_DISABLED' %}checked{% endif %}>
+
+                        {% if alert.state == 'MANUALLY_DISABLED' %}
+                            <span>🔴</span>
+                        {% else %}
+                            <span>🟢</span>
+                        {% endif %}
+                    </label>
                 </td>
             </tr>
             {% endfor %}

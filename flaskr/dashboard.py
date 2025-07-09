@@ -34,17 +34,15 @@ class DisabledSchema(Schema):
 @bp.post("/alerts/action")
 @bp.input(DisabledSchema)
 @bp.doc(summary="Process an alert status change to be manually disabled or not. This is submitted by the HTML form")
-def action_alert():
+def action_alert(json_data):
     # Apply the action of enabling or disabling the alert
-    action = request.get_json()
-
-    splits = action["value"].split(".")
+    splits = json_data["value"].split(".")
     if len(splits) != 2:
         return "Unknown action type", 500
 
     alertType = splits[0]
     fridge = splits[1]
-    state = "MANUALLY_DISABLED" if action["checked"] else "DISABLED"
+    state = "MANUALLY_DISABLED" if json_data["checked"] else "DISABLED"
 
     # Write the update to the log file for the alert code to read and process it
     if os.path.getsize(current_app.config["ALERT_CHANGE_PATH"]) > 0:

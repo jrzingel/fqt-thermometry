@@ -77,7 +77,12 @@ def view_alerts():
 def view_alert(alert_type: str):
     # Load JSON from disk
     with open(current_app.config["ALERT_PATH"], 'r') as f:
-        status = json.load(f)
+        try:
+            status = json.load(f)
+        except json.decoder.JSONDecodeError:
+            print("Failed to decode JSON. Waiting a second")
+            time.sleep(1.0)
+            status = json.load(f)  # Give it half a second for file writes, then try again
 
     if "alerts" not in status.keys() or "last_updated" not in status.keys():
         return "Alerts are not available", 500

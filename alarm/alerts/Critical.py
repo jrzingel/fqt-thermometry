@@ -31,7 +31,7 @@ class Critical(Alert):
             else:
                 # We are ok
                 return False
-        return True  # If there is an error default to being in alarm
+        return False  # Default to being off as things can break unexpectedly
 
     def should_enable(self) -> bool:
         return self.if_below_threshold("oil_temp", 35.0) and self.if_below_threshold("mxc", 0.9)

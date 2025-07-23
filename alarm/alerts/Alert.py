@@ -39,20 +39,24 @@ class Alert(object):
         except urllib3.exceptions.MaxRetryError as e:
             # Server is down
             print(f"ERROR API server is unreachable: {e}")
+            self.state = State.DISABLED  # Protect ourselves from any chaos
             return {}
         if r.status < 300:
             try:
                 measurement = json.loads(r.data.decode('utf-8'))
             except JSONDecodeError as e:
                 print(f"ERROR Failed to parse json {e}")
+                self.state = State.DISABLED
                 return {}
             if ("reading" in measurement.keys()) and ("time" in measurement.keys()):
                 return measurement
             else:
                 print(f"ERROR Unknown keys {measurement.keys()}")
+                self.state = State.DISABLED
                 return {}
         else:
-            #print(f"ERROR Server error {r.status}")
+            print(f"ERROR Server error {r.status}")
+            self.state = State.DISABLED
             return {}
 
     def if_after_delay(self, cooldown=1) -> bool:
@@ -90,7 +94,6 @@ class Alert(object):
     def update(self) -> bool:
         """Update the alert control logic. Returns true if the alert changed to alarm."""
         self.data = self.update_data()
-        # TODO: self.check_for_manual_disable() from the website
         match self.state:
             case State.ALARM:
                 if not self.is_in_alarm():

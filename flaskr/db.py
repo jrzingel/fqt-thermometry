@@ -134,17 +134,15 @@ def fetch_readings(query: list[tuple], earliest_stamp: int, latest_stamp: int, b
     ORDER BY m.time
     """, [v for pair in query for v in pair] + [earliest_stamp, latest_stamp]).fetchall()
 
-    df = pd.DataFrame(result, columns=['fridge', 'sensor', 'time', 'reading'])
-    df['time'] = (df['time'] // bin) * bin  # bin the times
+    # Pivot records together so that they share the same time axis
+    df = pd.DataFrame.from_records(result, columns=['fridge', 'sensor', 'time', 'reading'])
+    df['time'] = (df['time'] // bin) * bin
 
-    pivoted = df.pivot_table(index='time', columns=['fridge', 'sensor'], values='reading', aggfunc='first')
+    grouped = df.groupby(['time', 'fridge', 'sensor'])['reading'].first().unstack(['fridge', 'sensor'])
 
-    # Make sure that all the request parameters are full (even if there is no data)
-    for (f, s) in query:
-        col = (f, s)
-        if col not in pivoted.columns:
-            pivoted[col] = None
-    return pivoted.sort_index(axis=1)
+    # Ensure all requested columns are present
+    grouped = grouped.reindex(columns=pd.MultiIndex.from_tuples(query), fill_value=None)
+    return grouped
 
 
 @click.command('init-db')

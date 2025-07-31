@@ -28,7 +28,7 @@ class PulseTubeOff(Alert):
     @property
     def describe_condition(self):
         if "reading" in self.data["pulse_on"].keys():
-            return f"Pulse tube is {"OFF" if self.data["pulse_on"]["reading"] == 0.0 else "ON"} | Alarm = OFF"
+            return f"Pulse tube is {'OFF' if self.data['pulse_on']['reading'] == 0.0 else 'ON'} | Alarm = OFF"
         return ""
 
     @property

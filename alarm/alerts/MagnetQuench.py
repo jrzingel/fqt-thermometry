@@ -8,7 +8,6 @@ This is when the temperature of the magnet rapidly rises from under 10K by 5K wi
 @author: james
 """
 
-from typing import override
 from .Alert import Alert
 from datetime import datetime
 
@@ -19,7 +18,6 @@ class MagnetQuench(Alert):
         self.last_reading = None
         self.last_reading_time = None
 
-    @override
     def is_in_alarm(self) -> bool:
         measurement = self._get_latest("magnet")
 
@@ -52,16 +50,14 @@ class MagnetQuench(Alert):
         else:
             return self.active  # Default to alarm if activated... otherwise the magnet may not be connected
 
-    @override
     def should_enable(self):
         self.if_below_threshold("magnet", 10.0)
 
-    @override
     @property
     def description(self) -> str:
         return "Magnet temperature has risen far too quickly (Over 5K in under 2 min). The magnet has most likely quenched. Alarm disabled until magnet temperature is below 10K."
 
-    @override
     @property
     def title(self) -> str:
         return "Magnet Quenched"
+

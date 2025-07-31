@@ -75,7 +75,7 @@ class Watchtower:
             for alert in self.alerts:
                 if alert.__class__.__name__ == change["type"] and alert.fridge == change["fridge"]:
                     if alert.state.name != change["action"]:
-                        print(f"[{datetime.now().isoformat()}] Updating status of {change["type"]} @ {change["fridge"]} to {change['action']}")
+                        print(f"[{datetime.now().isoformat()}] Updating status of {change['type']} @ {change['fridge']} to {change['action']}")
                         if change["action"] == "MANUALLY_DISABLED":
                             alert.state = State.MANUALLY_DISABLED
                         else:

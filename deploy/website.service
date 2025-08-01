@@ -1,0 +1,11 @@
+[Unit]
+Description=Thermometry website
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/home/fqt/thermometry/start-website.sh
+Type=simple
+
+[Install]
+WantedBy=multi-user.target

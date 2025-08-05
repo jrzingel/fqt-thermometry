@@ -338,7 +338,12 @@ if __name__ == "__main__":
         listen()
     except Exception as e:
         print(e)
-        traceback.print_exc()
+        error = traceback.format_exc()
+        with open("error.log", "a") as f:
+            f.write(f"Error at {datetime.now().isoformat()}\n")
+            f.write(error)
+            f.write("\n")
+        print(error)
         print("Shutting down")
         time.sleep(10.0)
     sys.exit(0)

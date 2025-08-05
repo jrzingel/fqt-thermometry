@@ -1,22 +1,16 @@
 # Methods for controlling the SQLite DB
 
-import sqlite3
-from datetime import datetime, timedelta, UTC
 import click
 import numpy as np
 import pandas as pd
-
+import psycopg2
 from flask import current_app, g
 
 
 def get_db():
     """Return the current database connection"""
     if 'db' not in g:
-        g.db = sqlite3.connect(
-            current_app.config['DATABASE'],
-            detect_types=sqlite3.PARSE_DECLTYPES
-        )
-        g.db.row_factory = sqlite3.Row
+        g.db = psycopg2.connect(**current_app.config["DATABASE"])
     return g.db
 
 
@@ -30,32 +24,42 @@ def close_db(e=None):
 def init_db():
     """Initialise the database with the appropriate schema. THIS RESETS ALL DATA STORED."""
     db = get_db()
+    cur = db.cursor()
     with current_app.open_resource('schema.sql', mode='r') as f:
-        db.executescript(f.read())  # Setup tables
+        cur.execute(f.read())
+    db.commit()
+    cur.close()
+
 
 
 def add_fridge(name: str) -> int:
     """Add a new fridge to the database"""
     db = get_db()
     cursor = db.cursor()
-    result = cursor.execute("""
+    cursor.execute("""
         INSERT INTO fridge (name)
-        VALUES (?)
+        VALUES (%s)
+        RETURNING id
         """, (name,))
+    f_id = cursor.fetchone()[0]
     db.commit()
-    return cursor.lastrowid
+    cursor.close()
+    return f_id
 
 
 def add_sensor(name: str, fridge_id: int, latest=0) -> int:
     """Add a new sensor to the database"""
     db = get_db()
     cursor = db.cursor()
-    result = cursor.execute("""
+    cursor.execute("""
         INSERT INTO sensor (name, fridge_id, latest)
-        VALUES (?, ?, ?)
+        VALUES (%s, %s, %s)
+        RETURNING id
         """, (name, fridge_id, latest))
+    s_id = cursor.fetchone()[0]
     db.commit()
-    return cursor.lastrowid
+    cursor.close()
+    return s_id
 
 
 def create_default_fridges():
@@ -65,14 +69,15 @@ def create_default_fridges():
     latest_sensors = ["pulse_on", "oil_temp", "water_temp"]
     for fridge in fridges:
         f_id = add_fridge(fridge)
+        print(fridge, f_id)
         for sensor in sensors:
-            add_sensor(sensor, f_id, 0)
+            add_sensor(sensor, f_id, False)
         for sensor in latest_sensors:
-            add_sensor(sensor, f_id, 1)
+            add_sensor(sensor, f_id, True)
             
     winona2_id = add_fridge("winona2")
     for sensor in ["pulse_on", "oil_temp", "water_temp"]:  # We only need the compressor settings
-        add_sensor(sensor, winona2_id, 1)
+        add_sensor(sensor, winona2_id, True)
 
 
 def create_dummy_data():
@@ -81,12 +86,15 @@ def create_dummy_data():
     from datetime import datetime, timezone
 
     db = get_db()
+    cur = db.cursor()
     now = int(datetime.now(timezone.utc).timestamp())
 
     # Do historic data
     n = 201
-    sensors = db.execute("SELECT id FROM sensor WHERE latest=0").fetchall()
+    cur.execute("SELECT id FROM sensor WHERE latest=false;")
+    sensors = cur.fetchall()
     times = np.linspace(now - 3 * 24 * 60 * 60, now, n)
+    times = [datetime.fromtimestamp(t) for t in times]  # Convert to datetime object
     for _id in sensors:
         scale = 1e-4
         id = _id[0]
@@ -100,42 +108,48 @@ def create_dummy_data():
         inx = np.random.randint(0, n, size=(n // 4))
         vals = np.delete(vals, inx)
         times_ = np.delete(times.copy(), inx)
-        tuples = [(t, id, r) for t, r in zip(times_, vals)]
-        db.executemany(
-            'INSERT INTO measurement (time, sensor_id, reading) VALUES (?, ?, ?)', tuples
+        tuples = [(t, id, r) for t, r in zip(times_, vals.astype(float).tolist())]
+        cur.executemany(
+            'INSERT INTO measurement (time, sensor_id, reading) VALUES (%s, %s, %s);', tuples
         )
 
     # Do latest data
-    sensors = db.execute("SELECT id FROM sensor WHERE latest=1").fetchall()
+    cur.execute("SELECT id FROM sensor WHERE latest=true;")
+    sensors = cur.fetchall()
     for _id in sensors:
         id = _id[0]
         val = random.gauss(0, 10)
-        db.execute(
-            'INSERT INTO latest_reading (time, sensor_id, reading) VALUES (?, ?, ?)', (now, id, val)
+        cur.execute(
+            'INSERT INTO latest_reading (time, sensor_id, reading) VALUES (%s, %s, %s)', (datetime.fromtimestamp(now), id, val)
         )
 
     db.commit()
+    cur.close()
 
 
 def fetch_readings(query: list[tuple], earliest_stamp: int, latest_stamp: int, bin: int =1) -> pd.DataFrame:
     """Fetch all sensor readings between timestamps for the given  fridge/sensor querys. Combine times into multiples of bin"""
     # query should be of the form: [("fridge", "sensor"), ("fridge", "sensor"), ... ]
     db = get_db()
+    cur = db.cursor()
 
     # Build dynamic WHERE clause
-    WHERE_clause = " OR ".join([f"(f.name = ? AND s.name = ?)" for _ in query])
-    result = db.execute(f"""
+    WHERE_clause = " OR ".join([f"(f.name = %s AND s.name = %s)" for _ in query])
+    cur.execute(f"""
     SELECT f.name AS fridge, s.name AS sensor, m.time, m.reading
     FROM measurement m
     JOIN sensor s ON m.sensor_id = s.id
     JOIN fridge f ON s.fridge_id = f.id
     WHERE ({WHERE_clause})
-    AND m.time BETWEEN ? AND ?
+    AND m.time BETWEEN %s AND %s
     ORDER BY m.time
-    """, [v for pair in query for v in pair] + [earliest_stamp, latest_stamp]).fetchall()
+    """, [v for pair in query for v in pair] + [earliest_stamp, latest_stamp])
+    result = cur.fetchall()
+    cur.close()
 
     # Pivot records together so that they share the same time axis
     df = pd.DataFrame.from_records(result, columns=['fridge', 'sensor', 'time', 'reading'])
+    df['time'] = df['time'].astype('int64') // 10**9  # Convert datetime objects to unix timestamp
     df['time'] = (df['time'] // bin) * bin
 
     grouped = df.groupby(['time', 'fridge', 'sensor'])['reading'].first().unstack(['fridge', 'sensor'])

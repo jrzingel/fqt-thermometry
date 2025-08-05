@@ -51,15 +51,17 @@ class SingleReadingSchema(Schema):
 def getLatestReading(query_data: dict):
     """Get the latest reading of a given sensor."""
     db = get_db()
+    cur = db.cursor()
     # First, identify which table to use
-    result = db.execute(
+    cur.execute(
         """
         SELECT s.id AS sensor_id, s.latest
         FROM sensor s
         JOIN fridge f ON f.id = s.fridge_id
-        WHERE s.name = ? AND f.name = ?;""",
+        WHERE s.name = %s AND f.name = %s;""",
         (query_data["sensor"], query_data["fridge"])
-    ).fetchone()
+    )
+    result = cur.fetchone()
 
     if not result:
         abort(404, f"No sensor {query_data['sensor']} found")
@@ -67,26 +69,29 @@ def getLatestReading(query_data: dict):
 
     # Switch based on what table to use
     if latest_only:
-        result = db.execute("""
+        cur.execute("""
         SELECT lr.time, lr.reading
         FROM latest_reading lr
-        WHERE lr.sensor_id = ?
-        """, (sensor_id,)).fetchone()
+        WHERE lr.sensor_id = %s
+        """, (sensor_id,))
     else:
-        result = db.execute("""
+        cur.execute("""
         SELECT m.time, m.reading
         FROM measurement m
-        WHERE m.sensor_id = ?
+        WHERE m.sensor_id = %s
         ORDER BY m.time DESC 
-        """, (sensor_id,)).fetchone()
+        """, (sensor_id,))
+    result = cur.fetchone()
     if result:
         time, reading = result
+        cur.close()
         return {
-            "time": datetime.fromtimestamp(time, timezone.utc),
+            "time": time,
             "fridge": query_data["fridge"],
             "sensor": query_data["sensor"],
             "reading": reading,
         }
+    cur.close()
     abort(404, f"No data for {query_data['fridge']}.{query_data['sensor']} found")
 
 
@@ -113,10 +118,7 @@ def getRangeOfReadings(json_data: dict):
     if json_data["earliest_timestamp"] > json_data["latest_timestamp"]:
         return abort(400, "Earliest timestamp must be before latest timestamp")
 
-    earliest = int(json_data["earliest_timestamp"].timestamp())
-    latest = int(json_data["latest_timestamp"].timestamp())
-
-    df = fetch_readings([(json_data["fridge"], s) for s in json_data["sensors"]], earliest, latest)
+    df = fetch_readings([(json_data["fridge"], s) for s in json_data["sensors"]], json_data["earliest_timestamp"], json_data["latest_timestamp"])
 
     # Convert NaN to null
     df = df.replace({np.nan: None})
@@ -146,16 +148,11 @@ class MultipleFridgeResponseSchema(Schema):
 @bp.doc(summary="Get all readings from multiple fridges for some given sensors between two timestamps")
 def getMultipleFridgeReadings(json_data: dict):
     """Get a range of readings between two timestamps for a given sensor on each fridge. Truncate the seconds."""
-    db = get_db()
-
     # Sanity checks of the input
     if json_data["earliest_timestamp"] > json_data["latest_timestamp"]:
         return abort(400, "Earliest timestamp must be before latest timestamp")
 
-    earliest = int(json_data["earliest_timestamp"].timestamp())
-    latest = int(json_data["latest_timestamp"].timestamp())
-
-    df = fetch_readings([(q[0], q[1]) for q in json_data["query"]], earliest, latest, bin=60)
+    df = fetch_readings([(q[0], q[1]) for q in json_data["query"]], json_data["earliest_timestamp"], json_data["latest_timestamp"], bin=60)
 
     # Convert NaN to null
     df = df.replace({np.nan: None})
@@ -191,6 +188,7 @@ def generate_signature(fridge: str, sensor: str, time: int, reading: float) -> s
 def addReading(json_data: dict):
     """Upload temperature data for a given time from listener.py. Not publicly accessible."""
     db = get_db()
+    cur = db.cursor()
     time = int(json_data["time"].timestamp())
 
     # First, identify if the request is genuine
@@ -199,36 +197,39 @@ def addReading(json_data: dict):
         return abort(401, "Invalid signature. You are not authorized to upload data.")
 
     # Second, identify which table to use
-    result = db.execute(
+    cur.execute(
         """
         SELECT s.id AS sensor_id, s.latest
         FROM sensor s
         JOIN fridge f ON f.id = s.fridge_id
-        WHERE s.name = ? AND f.name = ?;""",
+        WHERE s.name = %s AND f.name = %s;""",
         (json_data["sensor"], json_data["fridge"])
-    ).fetchone()
+    )
+    result = cur.fetchone()
 
     if not result:
+        cur.close()
         abort(404, f"No sensor '{json_data['sensor']}' found for fridge '{json_data['fridge']}'")
     sensor_id, latest_only = result
 
     try:
         if latest_only:
             # Add to the latest table
-            db.execute("""
+            cur.execute("""
             INSERT INTO latest_reading (sensor_id, time, reading)
-            VALUES (?, ?, ?)
+            VALUES (%s, %s, %s)
             ON CONFLICT(sensor_id) DO UPDATE SET
                 time = excluded.time,
                 reading = excluded.reading;
-            """, (sensor_id, time, json_data["reading"]))
+            """, (sensor_id, json_data["time"], json_data["reading"]))
         else:
             # Add to historic readings table
-            db.execute("""
+            cur.execute("""
             INSERT INTO measurement (time, sensor_id, reading) 
-            VALUES (?, ?, ?)
-            """, (time, sensor_id, json_data["reading"]))
+            VALUES (%s, %s, %s)
+            """, (json_data["time"], sensor_id, json_data["reading"]))
         db.commit()
+        cur.close()
     except db.IntegrityError:
         return abort(500, "Duplicate data entry")
     return {"success": True}

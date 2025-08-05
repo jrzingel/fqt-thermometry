@@ -2,7 +2,7 @@
 # Copied and pasted onto the fridge PCs.
 # For an up-to-date version, check the repository on GitHub : https://github.com/jrzingel/fqt-thermometry
 
-__VERSION__ = 1.8
+__VERSION__ = 1.9
 
 import os
 import sys
@@ -79,7 +79,7 @@ def upload_reading(timestamp: datetime, fridge: str, sensor: str, reading: float
         print(f"\nError {req.status_code} occurred when uploading to the server: {req.json()}")
     else:
         print(f" | Upload {req.json()}")
-    time.sleep(0.1)  # Don't spam the server
+    time.sleep(0.01)  # Don't spam the server
 
 
 def watch_X_file(path: str, last_position: int = 0):
@@ -224,6 +224,8 @@ def sync_position_with_server(config: dict) -> dict:
 
 def get_new_line(config: dict, file_positions: dict, today: str, fname: str, name: str):
     """Get the next line from a file if available. Store the updated file position if we read a line"""
+    if name not in file_positions.keys():
+        file_positions[name] = 0  # It is a new day, so add start from the top
     file_path = os.path.join(config["logdir"], today, fname.replace("DATE", today))
     line, new_pos = watch_X_file(file_path, file_positions[name])
     file_positions[name] = new_pos
@@ -253,8 +255,11 @@ def listen():
     last_day = datetime.now().strftime("%y-%m-%d")
     file_positions = sync_position_with_server(config)
 
+    # Add a day override feature for uploading old data
+    day_override = config["day_override"] if "day_override" in config.keys() else None
+
     while True:  # Main loop
-        today = datetime.now().strftime("%y-%m-%d")
+        today = datetime.now().strftime("%y-%m-%d") if day_override is None else day_override
 
         # Check if the day changed. If so we must move to new file positions
         if today != last_day:
@@ -326,7 +331,7 @@ def listen():
 
         # TODO: On older fridges check the valve file to see if the pulse tube is on
 
-        time.sleep(2.0)  # Logs only update every minute so no need to check more often
+        time.sleep(0.1)  # Logs only update every minute so no need to check more often
 
 
 if __name__ == "__main__":

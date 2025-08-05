@@ -9,6 +9,8 @@ logdir: "C:\\Users\\LabUser\\Desktop\\Logs"
 maxigauge: "maxigauge DATE.log"
 status: "status DATE.log"
 
+day_override: "1/8/2025"  # Upload old readings from this date
+
 temperatures:
   T1:
     sensor: "50K"

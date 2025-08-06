@@ -16,8 +16,8 @@ import traceback
 import time
 
 
-#SERVER_LOCATION = "129.94.115.104"  # points to status.fqt.unsw.edu.au
-SERVER_LOCATION = "129.94.115.219"  # Raspberry Pi
+SERVER_LOCATION = "129.94.115.104"  # points to status.fqt.unsw.edu.au
+#SERVER_LOCATION = "129.94.115.219"  # Raspberry Pi
 
 #SERVER_LOCATION = "localhost:5000"
 CONFIG_FILE = os.path.join(os.getcwd(), "fridge.yaml")
@@ -262,7 +262,7 @@ def listen():
         today = datetime.now().strftime("%y-%m-%d") if day_override is None else day_override
 
         # Check if the day changed. If so we must move to new file positions
-        if today != last_day:
+        if today != last_day and day_override is None:
             print("New day. Resetting file positions")
             file_positions = {}
             last_day = today

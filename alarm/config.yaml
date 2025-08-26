@@ -7,48 +7,48 @@ alerts:
     - scarlett
     - tallulah
     - venus
-    - winona
+    # - winona
 
   PulseTubeOff:  # requires modern bluefors software with status file
     - venus
-    - winona
+    # - winona
 
   MxcAbove1K:
     - queenie
     - scarlett
     - tallulah
     - venus
-    - winona
+    # - winona
 
   UnresponsiveFridge:
     - queenie
     - scarlett
     - tallulah
     - venus
-    - winona
+    # - winona
 
   HotOilTemp:
     - queenie
     - scarlett
     - tallulah
     - venus
-    - winona
-    - winona2
+    # - winona
+    # - winona2
 
   HotWaterTemp:
     - queenie
     - scarlett
     - tallulah
     - venus
-    - winona
-    - winona2
+    # - winona
+    # - winona2
 
   LosingVacuum:
     - queenie
     - scarlett
     - tallulah
     - venus
-    - winona
+  #  - winona
 
   # MagnetQuench:
   #   - queenie

@@ -31,16 +31,16 @@ class LosingVacuum(Alert):
             self.history.pop(0)
             self.history.append(self.data["P1"]["reading"])
 
-            avg = sum(self.history) / self.n
+            avg = np.median(self.history)  # So high values are ignored
 
             if np.isnan(avg):
                 # It hasn't been n minutes yet
                 return False
-            return avg > 10.0e-6
+            return avg > 7.0e-6
         return False
 
     def should_enable(self) -> bool:
-        if self.if_below_threshold("P1", 8.0e-6):
+        if self.if_below_threshold("P1", 6.5e-6):
             return True
         return False
 
@@ -49,14 +49,14 @@ class LosingVacuum(Alert):
 
     @property
     def description(self) -> str:
-        return "Vacuum can pressure (P1) has increased over 1e-5 mBar. Fridge will begin to (or is already) warm soon. Alarm disabled until pressure P1 drops below 8e-6 mBar."
+        return "Vacuum can pressure (P1) average has increased over 7e-6 mBar over the last 4 minutes. Fridge will begin to (or is already) warm soon. Alarm disabled until pressure P1 drops below 6.5e-6 mBar."
 
     @property
     def describe_condition(self):
         if "reading" in self.data["P1"].keys():
-            return f"P1 = {self.data['P1']['reading']} mBar | Alarm > 1e-5 mBar, Enabled < 8e-6 mBar"
+            return f"P1 = {self.data['P1']['reading']} mBar | Alarm > 7e-6 mBar, Enabled < 6.5e-6 mBar"
         return ""
 
     @property
     def title(self) -> str:
-        return "P1 (Vacuum can) pressure above 1e-5 mBar"
+        return "P1 (Vacuum can) pressure above 7e-6 mBar"

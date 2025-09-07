@@ -16,7 +16,7 @@ import numpy as np
 class LosingVacuum(Alert):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.n = 4  # Number of points to average over
+        self.n = 8  # Number of points to average over. This is run every 30 seconds
         self.history = [np.nan] * self.n
 
     def update_data(self) -> dict:

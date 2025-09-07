@@ -119,8 +119,10 @@ class Watchtower:
 
 
 if __name__ == "__main__":
-    morello_webhook = "https://prod-58.australiasoutheast.logic.azure.com:443/workflows/b051ee511eb440c7acd48c3169746c5b/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=C57BECtucQyq-WnDmi35NKyk2-Q8MNo-kaVuFk3PSp4"
-    test_webhook = "https://prod-38.australiasoutheast.logic.azure.com:443/workflows/4864832cab2141d395e86f5a95b4f561/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Z0UNCfaQ_5O6DVT3yzeee2qAxgO1S0rnBmYIZuwBb1o"
+    morello_webhook = "https://default3ff6cfa4e71548dbb8e10867b9f9fb.a3.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/b051ee511eb440c7acd48c3169746c5b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=SGtHDvm5iQaD3Mvhj_eW5wbjUgdk_t6PKjgvkM8W-vo"
+    # DEPRECATED VERSION: morello_webhook = "https://prod-58.australiasoutheast.logic.azure.com:443/workflows/b051ee511eb440c7acd48c3169746c5b/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=C57BECtucQyq-WnDmi35NKyk2-Q8MNo-kaVuFk3PSp4"
+    test_webhook = "https://default3ff6cfa4e71548dbb8e10867b9f9fb.a3.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/4864832cab2141d395e86f5a95b4f561/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=SuLh1J8UYWQseFDreqW7xL0vUbVthAHAf97_DRuksoQ"
+    # DEPRECATED VERSION: test_webhook = "https://prod-38.australiasoutheast.logic.azure.com:443/workflows/4864832cab2141d395e86f5a95b4f561/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Z0UNCfaQ_5O6DVT3yzeee2qAxgO1S0rnBmYIZuwBb1o"
     local_api = "http://localhost:5000"
     local_server_api = "http://localhost"
     server_api = "http://status.fqt.unsw.edu.au"

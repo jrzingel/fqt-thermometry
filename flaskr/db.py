@@ -149,7 +149,8 @@ def fetch_readings(query: list[tuple], earliest_stamp: int, latest_stamp: int, b
 
     # Pivot records together so that they share the same time axis
     df = pd.DataFrame.from_records(result, columns=['fridge', 'sensor', 'time', 'reading'])
-    df['time'] = df['time'].astype('int64') // 10**9  # Convert datetime objects to unix timestamp
+    df['time'] = pd.to_datetime(df['time'], utc=True)  # Force datetime object for daylight savings
+    df['time'] = df['time'].view('int64') // 10**9  # Convert datetime objects to unix timestamp
     df['time'] = (df['time'] // bin) * bin
 
     grouped = df.groupby(['time', 'fridge', 'sensor'])['reading'].first().unstack(['fridge', 'sensor'])

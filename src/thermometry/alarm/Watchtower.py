@@ -6,10 +6,8 @@ from datetime import datetime
 import urllib3
 import json
 import yaml
-import time
-import schedule
-
-from alerts import *
+from thermometry import config
+from thermometry.alarm.alerts import *
 
 
 class Watchtower:
@@ -63,12 +61,12 @@ class Watchtower:
                 msg = self._format_message(alert.title, alert.fridge, alert.description)
                 self.send_message(msg)
 
-    def apply_changes(self, fname="changes.json"):
+    def apply_changes(self):
         """Apply the changes to the alerts from the website"""
-        if os.path.getsize(fname) == 0:  # File is empty, no changes necessary to apply
+        if os.path.getsize(config.ALERT_CHANGE_PATH) == 0:  # File is empty, no changes necessary to apply
             return
 
-        with open(fname, "r") as f:
+        with open(config.ALERT_CHANGE_PATH, "r") as f:
             changes = json.load(f)
 
         for change in changes:
@@ -83,7 +81,7 @@ class Watchtower:
                     else:
                         print(f"[{datetime.now().isoformat()}] Received same action twice. Be patient!")
                     break
-        open(fname, 'w').close()  # Clear the file now the changes have been processed
+        open(config.ALERT_CHANGE_PATH, 'w').close()  # Clear the file now the changes have been processed
 
     def status(self, fname="status.txt"):
         """Print the current status of which alarms are active"""
@@ -92,7 +90,7 @@ class Watchtower:
             for alert in self.alerts:
                 f.write(f"- {alert.__class__.__name__} @ {alert.fridge}: {alert.state.name} \t{alert.describe_condition}\n")
 
-    def log_status(self, fname="status.json"):
+    def log_status(self):
         """Log the current alert status to a JSON file"""
         contents = []
 
@@ -111,31 +109,9 @@ class Watchtower:
                 "description": alert.description
             } | condition)
 
-        with open(fname, "w") as f:
+        with open(config.ALERT_PATH, "w") as f:
             f.write(json.dumps({
                 "last_updated": datetime.now().astimezone().isoformat(sep=" ", timespec="seconds"),
                 "alerts": contents
             }, indent=4))
-
-
-if __name__ == "__main__":
-    morello_webhook = "https://default3ff6cfa4e71548dbb8e10867b9f9fb.a3.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/b051ee511eb440c7acd48c3169746c5b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=SGtHDvm5iQaD3Mvhj_eW5wbjUgdk_t6PKjgvkM8W-vo"
-    # DEPRECATED VERSION: morello_webhook = "https://prod-58.australiasoutheast.logic.azure.com:443/workflows/b051ee511eb440c7acd48c3169746c5b/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=C57BECtucQyq-WnDmi35NKyk2-Q8MNo-kaVuFk3PSp4"
-    test_webhook = "https://default3ff6cfa4e71548dbb8e10867b9f9fb.a3.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/4864832cab2141d395e86f5a95b4f561/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=SuLh1J8UYWQseFDreqW7xL0vUbVthAHAf97_DRuksoQ"
-    # DEPRECATED VERSION: test_webhook = "https://prod-38.australiasoutheast.logic.azure.com:443/workflows/4864832cab2141d395e86f5a95b4f561/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Z0UNCfaQ_5O6DVT3yzeee2qAxgO1S0rnBmYIZuwBb1o"
-    local_api = "http://localhost:5000"
-    local_server_api = "http://localhost"
-    server_api = "http://status.fqt.unsw.edu.au"
-
-    watch = Watchtower(morello_webhook, local_server_api)
-    #watch = Watchtower(test_webhook, server_api)
-    watch.load_config("config.yaml")
-
-    schedule.every(30).seconds.do(watch.lookout)
-    schedule.every(10).seconds.do(watch.apply_changes)
-    schedule.every(10).seconds.do(watch.log_status)
-
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
 

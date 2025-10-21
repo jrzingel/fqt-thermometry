@@ -17,7 +17,7 @@ import hmac
 import hashlib
 
 
-from flaskr.db import get_db, fetch_readings
+from thermometry.flaskr.db import get_db, fetch_readings
 
 
 bp = APIBlueprint("api", __name__, url_prefix="/api")

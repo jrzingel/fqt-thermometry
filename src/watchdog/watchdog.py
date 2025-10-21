@@ -14,7 +14,7 @@ PRIVATE_TEAMS_WEBHOOK = "https://prod-38.australiasoutheast.logic.azure.com:443/
 MORELLO_WEBHOOK = "https://prod-58.australiasoutheast.logic.azure.com:443/workflows/b051ee511eb440c7acd48c3169746c5b/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=C57BECtucQyq-WnDmi35NKyk2-Q8MNo-kaVuFk3PSp4"
 
 # Select where to post the message
-TEAMS_WEBHOOK = MORELLO_WEBHOOK
+TEAMS_WEBHOOK = PRIVATE_TEAMS_WEBHOOK
 
 
 def check_alive():

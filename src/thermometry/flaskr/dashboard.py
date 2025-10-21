@@ -26,9 +26,9 @@ def dashboard():
 
 class DisabledSchema(Schema):
     """Schema for requesting an alert to be disabled or not"""
-    name = fields.String(required=False, default="action")
-    value = fields.String(required=True, default="TYPE.FRIDGE")
-    checked = fields.Boolean(default=False)
+    name = fields.String(required=False)
+    value = fields.String(required=True)
+    checked = fields.Boolean(required=False)
 
 
 @bp.post("/alerts/action")

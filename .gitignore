@@ -9,3 +9,8 @@ status.txt
 status.json
 *.log
 *.spec
+.venv/
+*.egg-info/
+*.egg
+*.sqlite3
+config.py

@@ -15,11 +15,12 @@ DATABASE = {
 }
 
 WEBSITE = {
-    "port": 5000,
+    "port": 5000,  # recommended to keep this on 5000 and use nginx to reverse proxy to port 80
     "threads": 3
 }
 TEAMS_WEBHOOK = "..."
-SERVER_URL = "http://localhost:5000"  # from perspective of the server
+SERVER_URL = "http://localhost:5000"  # from perspective of the server (used by alerts internally)
 
 WATCHDOG_TEAMS_WEBHOOK = "..."
-EXTERNAL_WEBSITE_URL = "http://thermometry.example.com"
+WATCHDOG_WEBSITE_URL = "http://thermometry.example.com"  # used by the watchdog application
+EXTERNAL_WEBSITE_URL = "http://thermometry.example.com"  # used by javascript to query the api

@@ -13,7 +13,7 @@ LOG_FILE = "watchdog.log"
 
 def check_alive():
     """Ping the server and check that it is alive"""
-    url = f"{config.EXTERNAL_WEBSITE_URL}/api/v1/ping"
+    url = f"{config.WATCHDOG_WEBSITE_URL}/api/v1/ping"
     try:
         response = requests.get(url, timeout=30.0)
     except requests.exceptions.RequestException as e:

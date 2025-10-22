@@ -5,6 +5,7 @@ from apiflask import APIBlueprint, Schema, fields
 from flask import render_template, request, current_app, jsonify, abort
 import time
 import json
+from thermometry import config
 
 bp = APIBlueprint("dashboard", __name__, url_prefix="/dashboard")
 
@@ -18,10 +19,10 @@ def dashboard():
 
     if fridge is None:
         # Render all the fridges at once
-        return render_template("combined_dashboard.html", title="Fridge Status", url=request.url_root)
+        return render_template("combined_dashboard.html", title="Fridge Status", url=config.EXTERNAL_WEBSITE_URL)
     else:
         # Render just one fridge
-        return render_template("dashboard.html", fridge=fridge, title=f"{fridge.title()} Fridge Status", url=request.url_root, showPressures=showPressures)
+        return render_template("dashboard.html", fridge=fridge, title=f"{fridge.title()} Fridge Status", url=config.EXTERNAL_WEBSITE_URL, showPressures=showPressures)
 
 
 class DisabledSchema(Schema):

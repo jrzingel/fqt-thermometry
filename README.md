@@ -7,7 +7,7 @@
 
 0) Dependencies are managed using `uv`. Install from https://docs.astral.sh/uv/.
 1) First copy `config.example.py` to `config.py` and add the desired values. Do the same for `config.example.yaml` for the alerts system.
-2) Make sure that a PostgreSQL database has been created with TimescaleDB extension. See below for additional commands of how to do this.
+2) Make sure that a PostgreSQL database has been created with TimescaleDB extension and database `thermometry`. See below for additional commands of how to do this.
 3) Build the listener application and deploy it on the BlueFors fridge computer. See instructions below.
 3) Run the website and alerts.
 
@@ -18,11 +18,18 @@ To build the listener application:`uv run build-listener`. See more instructions
 
 To build the watchdog application: `uv run build-watchdog` (which monitors the status of the website and sends a Teams message if it goes down)
 
+For production you really shouldn't run this on port=80. Instead run this on port=5000 and use a reverse proxy such as nginx running on port 80.
+
 ### Other database commands
 First install the TimescaleDB extension to the PostgreSQL database. This just is optimised for time series data and makes retriving data faster. Instructions to install this are found https://docs.tigerdata.com/self-hosted/latest/install/
 
+Next you need to create the `thermometry` table. Do this using SQL via
+```bash
+sudo -u postgres psql -c "CREATE DATABASE thermometry"
+```
+
 To adjust the database by adding sensors and fridges use the following click commands.
-All must be run with the format `uv run -- flask --app thermometry.flask <COMMAND>` where `<COMMAND>` can be any of the following.
+All must be run with the format `uv run -- flask --app thermometry.flaskr <COMMAND>` where `<COMMAND>` can be any of the following.
 
 - `init-db` create the default database from `schema.sql`
 - `create-default-fridges` adds the fridges and sensors used by FQT. See `thermometry.flaskr.db.create_default_fridges` for a guide of how to add custom fridges using a python function. Alternatively run the following commands:

@@ -22,6 +22,7 @@ def run_website():
 def run_alerts():
     """Run the alert subsystem"""
     print("Starting the alerts")
+    time.sleep(2)  # wait for the website to startup
     watch = Watchtower(config.TEAMS_WEBHOOK, config.SERVER_URL)
     watch.load_config(os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.yaml"))
 

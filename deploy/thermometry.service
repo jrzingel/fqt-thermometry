@@ -1,0 +1,15 @@
+[Unit]
+Description=Thermometry server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=fqt
+WorkingDirectory=/home/fqt/fqt-thermometry
+ExecStart=/home/fqt/.local/bin/uv run all
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

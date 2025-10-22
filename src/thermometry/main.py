@@ -12,10 +12,6 @@ except ImportError:
     raise RuntimeError("Missing config.py - copy config.example.py to config.py and edit it")
 
 
-def build_database():
-    """"""
-
-
 def run_website():
     """Run the FQT website using waitress"""
     print("Starting the website")

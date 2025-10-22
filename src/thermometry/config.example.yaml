@@ -1,0 +1,29 @@
+# Config file for which alerts to associate with each fridge
+
+alerts:
+  Critical:
+    - fridge1
+    - fridge2
+
+  PulseTubeOff:  # requires modern Bluefors software with status file
+    - fridge1
+
+  MxcAbove1K:
+    - fridge1
+    - fridge2
+
+  UnresponsiveFridge:
+    - fridge1
+    - fridge2
+
+  HotOilTemp:
+    - fridge1
+    - fridge2
+
+  HotWaterTemp:
+    - fridge1
+    - fridge2
+
+  LosingVacuum:
+    - fridge1
+    - fridge2

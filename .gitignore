@@ -14,3 +14,6 @@ status.json
 *.egg
 *.sqlite3
 config.py
+config.yaml
+*.exe
+changes.json

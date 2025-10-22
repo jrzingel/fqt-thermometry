@@ -16,11 +16,8 @@ import traceback
 import time
 
 
-SERVER_LOCATION = "129.94.115.104"  # points to status.fqt.unsw.edu.au
-#SERVER_LOCATION = "129.94.115.219"  # Raspberry Pi
-
-#SERVER_LOCATION = "localhost:5000"
 CONFIG_FILE = os.path.join(os.getcwd(), "fridge.yaml")
+SERVER_LOCATION = ""  # will be overwritten by the config
 
 
 def check_alive():
@@ -234,19 +231,6 @@ def get_new_line(config: dict, file_positions: dict, today: str, fname: str, nam
 
 def listen():
     """Listen for new readings by watching the log files"""
-    if not os.path.exists(CONFIG_FILE):
-        print(f"Config file '{CONFIG_FILE}' does not exist. Make sure that this file exists, and then try again.")
-        time.sleep(60)
-        return
-
-    with open(CONFIG_FILE, "r") as f:
-        try:
-            config = yaml.safe_load(f)
-        except yaml.YAMLError as e:
-            print(f"Failed to load configuration file: {e}")
-            time.sleep(60)
-            return
-
     fridge = config["fridge"]
     secret = config["secret"]
     print(f"Watching {fridge} at {config['logdir']}")
@@ -337,6 +321,20 @@ def listen():
 if __name__ == "__main__":
     print(f"Version: {__VERSION__}")
 
+    if not os.path.exists(CONFIG_FILE):
+        print(f"Config file '{CONFIG_FILE}' does not exist. Make sure that this file exists, and then try again.")
+        time.sleep(60)
+        sys.exit(1)
+
+    with open(CONFIG_FILE, "r") as f:
+        try:
+            config = yaml.safe_load(f)
+        except yaml.YAMLError as e:
+            print(f"Failed to load configuration file: {e}")
+            time.sleep(60)
+            sys.exit(1)
+
+    SERVER_LOCATION = config["api_url"]
     wait_for_server()
 
     try:

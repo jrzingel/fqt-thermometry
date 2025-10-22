@@ -5,21 +5,15 @@ import requests
 from datetime import datetime
 import time
 import schedule
+from thermometry import config
 
 VERSION = "1.0"
-
 LOG_FILE = "watchdog.log"
-SERVER_LOCATION = "http://status.fqt.unsw.edu.au"
-PRIVATE_TEAMS_WEBHOOK = "https://prod-38.australiasoutheast.logic.azure.com:443/workflows/4864832cab2141d395e86f5a95b4f561/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Z0UNCfaQ_5O6DVT3yzeee2qAxgO1S0rnBmYIZuwBb1o"
-MORELLO_WEBHOOK = "https://prod-58.australiasoutheast.logic.azure.com:443/workflows/b051ee511eb440c7acd48c3169746c5b/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=C57BECtucQyq-WnDmi35NKyk2-Q8MNo-kaVuFk3PSp4"
-
-# Select where to post the message
-TEAMS_WEBHOOK = PRIVATE_TEAMS_WEBHOOK
 
 
 def check_alive():
     """Ping the server and check that it is alive"""
-    url = f"{SERVER_LOCATION}/api/v1/ping"
+    url = f"{config.EXTERNAL_WEBSITE_URL}/api/v1/ping"
     try:
         response = requests.get(url, timeout=30.0)
     except requests.exceptions.RequestException as e:
@@ -43,7 +37,7 @@ def send_teams_alert():
     message = f"<blockquote>[{time}]</blockquote> <h1><strong>FQT Website Down</strong>🔔</h1>\n \nThermometry website is unreachable... this should be addressed ASAP. Contact James."
     headers = {"Content-Type": "application/json"}
     r = requests.post(
-        TEAMS_WEBHOOK,
+        config.WATCHDOG_TEAMS_WEBHOOK,
         json={"text": message},
         headers=headers,
         timeout=30)

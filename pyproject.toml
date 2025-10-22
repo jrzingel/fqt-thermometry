@@ -23,3 +23,5 @@ package = true
 website = "thermometry.main:run_website"
 alerts = "thermometry.main:run_alerts"
 all = "thermometry.main:run_all"
+build-listener = "listener.main:build"
+build-watchdog = "watchdog.main:build"

@@ -19,10 +19,10 @@ def dashboard():
 
     if fridge is None:
         # Render all the fridges at once
-        return render_template("combined_dashboard.html", title="Fridge Status", url=config.EXTERNAL_WEBSITE_URL)
+        return render_template("combined_dashboard.html", fridges=config.FRIDGE_KEYS.keys(), title="Fridge Status", url=config.EXTERNAL_WEBSITE_URL)
     else:
         # Render just one fridge
-        return render_template("dashboard.html", fridge=fridge, title=f"{fridge.title()} Fridge Status", url=config.EXTERNAL_WEBSITE_URL, showPressures=showPressures)
+        return render_template("dashboard.html", fridges=config.FRIDGE_KEYS.keys(), fridge=fridge, title=f"{fridge.title()} Fridge Status", url=config.EXTERNAL_WEBSITE_URL, showPressures=showPressures)
 
 
 class DisabledSchema(Schema):
@@ -70,7 +70,7 @@ def view_alerts():
     with open(current_app.config["ALERT_PATH"], 'r') as f:
         status = json.load(f)
 
-    return render_template("alerts.html", alerts=status["alerts"], last_updated=status["last_updated"])
+    return render_template("alerts.html", fridges=config.FRIDGE_KEYS.keys(), alerts=status["alerts"], last_updated=status["last_updated"])
 
 
 @bp.get("/alerts/<string:alert_type>.json")

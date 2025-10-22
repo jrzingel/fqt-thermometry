@@ -2,7 +2,7 @@
 # Copied and pasted onto the fridge PCs.
 # For an up-to-date version, check the repository on GitHub : https://github.com/jrzingel/fqt-thermometry
 
-__VERSION__ = 1.9
+__VERSION__ = "1.10"
 
 import os
 import sys
@@ -335,6 +335,7 @@ if __name__ == "__main__":
             sys.exit(1)
 
     SERVER_LOCATION = config["api_url"]
+    print("Server at " + SERVER_LOCATION)
     wait_for_server()
 
     try:

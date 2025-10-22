@@ -3,6 +3,8 @@
 **View here http://status.fqt.unsw.edu.au**
 (Must be on the UNSW VPN)
 
+A website that shows the status 
+
 ## Run
 
 0) Dependencies are managed using `uv`. Install from https://docs.astral.sh/uv/.
@@ -32,7 +34,7 @@ To adjust the database by adding sensors and fridges use the following click com
 All must be run with the format `uv run -- flask --app thermometry.flaskr <COMMAND>` where `<COMMAND>` can be any of the following.
 
 - `init-db` create the default database from `schema.sql`
-- `create-default-fridges` adds the fridges and sensors used by FQT. See `thermometry.flaskr.db.create_default_fridges` for a guide of how to add custom fridges using a python function. Alternatively run the following commands:
+- `create-default-fridges` adds the fridges and sensors used by FQT. See `src/thermometry/flaskr/db.py:create_default_fridges` for a guide of how to add custom fridges using a python function. Alternatively run the following commands:
 - `add-fridge <name>` adds a named fridge and returns the fridge ID
 - `add-sensor <name> <fridge ID> <latest>` adds a named sensor to a given fridge. `latest` is a boolean flag of `0` or `1` if only the latest result should be recorded or if historic values should be kept. 
 - `create-dummy-data` is an internal method used for testing the database with some fake data
@@ -50,6 +52,13 @@ uv run --no-project --python 3.8 --with PyInstaller --with requests --with pyyam
 
 Deployment of this application needs a `fridge.yaml` file present in the same directory.
 See `src/listener/fridge.yaml` for an example configuration for reading the BlueFors logs.
+
+### Setting up the Teams webhook
+The alerts system is designed to automatically post a Teams message to a channel whenever an alarm is triggered. Doing this requires setting up an automation in the Workflows application. Create a flow matching the template below.
+
+![Teams example alert workflow setup](teams_workflow_setup.png)
+
+
 
 ### Basic Schematic
 A basic schematic of how the system works with multiple fridges is shown below. Note that the internal alert system is not shown.

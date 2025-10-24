@@ -3,7 +3,11 @@
 **View here http://status.fqt.unsw.edu.au**
 (Must be on the UNSW VPN)
 
-A website that shows the status 
+A website that shows the status of multiple Bluefors fridges allowing centralised monitoring. Also contains an alert system that sends Teams messages if fridge anomalies are detected so that action can be taken rapidly.
+
+![Screenshot of the FQT thermometry website](docs/website_screenshot.png)
+
+Created for the Morello Fundamental Quantum Technologies (FQT) group originally, but should be extendable to other systems!
 
 ## Run
 
@@ -56,11 +60,11 @@ See `src/listener/fridge.yaml` for an example configuration for reading the Blue
 ### Setting up the Teams webhook
 The alerts system is designed to automatically post a Teams message to a channel whenever an alarm is triggered. Doing this requires setting up an automation in the Workflows application. Create a flow matching the template below.
 
-![Teams example alert workflow setup](teams_workflow_setup.png)
+![Teams example alert workflow setup](docs/teams_workflow_setup.png)
 
 
 
 ### Basic Schematic
 A basic schematic of how the system works with multiple fridges is shown below. Note that the internal alert system is not shown.
 
-![Schematic of the networking layout of the system](thermometry_layout.jpg)
+![Schematic of the networking layout of the system](docs/thermometry_layout.jpg)

@@ -38,7 +38,18 @@ def create_app():
     @app.after_request
     def after_request(response):
         timestamp = time.strftime('[%Y-%b-%d %H:%M]')
-        logger.info('%s %s "%s %s %s" %s', timestamp, request.remote_addr, request.method, request.full_path, request.scheme, response.status)
+
+        # Determine origin IP
+        if request.headers.getlist("X-Forwarded-For"):
+            # If behind a reverse proxy (nginx)
+            ip = request.headers.getlist("X-Forwarded-For")[0].split(',')[0].strip()
+        elif request.headers.get("X-Real-IP"):
+            ip = request.headers.get("X-Real-IP")
+        else:
+            # fallback — direct client connection
+            ip = request.remote_addr or "unknown"
+
+        logger.info('%s %s "%s %s %s" %s', timestamp, ip, request.method, request.full_path, request.scheme.upper(), response.status)
         return response
 
     return app

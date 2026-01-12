@@ -1,8 +1,9 @@
-FRIDGE_KEYS = {
+FRIDGE_KEYS = {  # secrets for uploading data
     "fridge1": "e45e8a48-096e-4d5e-b987-b849cce7de2e",
     'fridge2': "e45e8a48-096e-4d5e-b987-b849cce7de2e",
     "fridge3": "e45e8a48-096e-4d5e-b987-b849cce7de2e",
 }
+SIDEBAR_FRIDGES = ["fridge1", "fridge2", "fridge3"]  # what to show in the sidebar of the website
 ALERT_PATH = "src/thermometry/alarm/status.json"
 ALERT_CHANGE_PATH = "src/thermometry/alarm/changes.json"
 ALERT_CONFIG_YAML_PATH = "/src/thermometry/config.example.yaml"

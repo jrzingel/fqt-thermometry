@@ -176,7 +176,7 @@ def sync_position_with_server(config: dict) -> dict:
     # Do the same for maxigauge and status
     last_seek = 0
     file_path = os.path.join(config["logdir"], today, config["maxigauge"].replace("DATE", today))
-    last_time = get_latest_time(config["fridge"], "P5")
+    last_time = get_latest_time(config["fridge"], "P5")  # (P5 is always active if the maxigauge is connected)
     if last_time is None:
         file_positions["maxigauge"] = 0
     else:
@@ -195,8 +195,9 @@ def sync_position_with_server(config: dict) -> dict:
                 else:
                     last_seek = f.tell()
 
+    last_seek = 0
     file_path = os.path.join(config["logdir"], today, config["status"].replace("DATE", today))
-    last_time = get_latest_time(config["fridge"], "oil_temp")
+    last_time = get_latest_time(config["fridge"], "oil_temp")  # oil_temp is always logged if the status file exists
     if last_time is None:
         file_positions["status"] = 0
     else:

@@ -86,6 +86,7 @@ async function fetchFromAPI(server, fridge, sensors) {
 
 async function fetchFridgesFromAPI(server, query) {
     // Query the API for fridge sensor data
+    // LEGACY METHOD
     const startTime = new Date(new Date().getTime() - 3 * 24 * 60 * 60 * 1000).toISOString();  // 3 days ago
     const endTime = now();
     const requestData = {
@@ -102,4 +103,18 @@ async function fetchFridgesFromAPI(server, query) {
         body: JSON.stringify(requestData)
     });
     return await response.json();
+}
+
+async function getColdestFridgeTempsFromAPI(server, fridges) {
+    // Query the API for the coldest fridge temps (only mxc and still but don't tell anyone....)
+    const query = fridges.flatMap(x => [[x, 'mxc'], [x, 'still']]);
+    let packed = await fetchFridgesFromAPI(server, query)
+
+    // Returns data raw (don't let the function unpack it)
+    let data = [packed["times"]];
+    for (let key of fridges) {
+        // Find whichever value is coldest
+        data.push(packed["readings"][key + ".mxc"].map((x,i) => Math.min(x??Infinity, packed["readings"][key + ".still"][i]??Infinity)));
+    }
+    return data;
 }

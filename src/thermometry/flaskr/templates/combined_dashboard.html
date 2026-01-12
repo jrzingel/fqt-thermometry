@@ -27,7 +27,7 @@ function setupPlots(num_plots) {
     const seriesOpts = [{}]
     for (let i = 1; i < data.length; i++) {
         seriesOpts.push({
-            label: capitalize(FRIDGES[i - 1][0]),
+            label: capitalize(FRIDGES[i - 1]),
             stroke: COLOURS[i - 1],
             spanGaps: true,
             value: (u, v) => v == null ? '' : formatNumber(1000*v, dp=1) + " mK"
@@ -35,7 +35,7 @@ function setupPlots(num_plots) {
     }
 
     const opts_main = {
-        title: "Mixing Chamber Temperatures",
+        title: "Coldest Fridge Temperatures",
         ...getSize(),
         focus: {
             alpha: 0.3,
@@ -73,10 +73,8 @@ function go() {
 
     function refreshData() {
         status.textContent = "Fetching data...";
-        fetchFridgesFromAPI("{{ url }}", FRIDGES)
-            .then(packed => {
-                let data = prepData(packed, FRIDGE_KEYS);
-
+        getColdestFridgeTempsFromAPI("{{ url }}", FRIDGES)
+            .then(data => {
                 let isZoomed = plot.scales.x.min > plot.data[0][0] || plot.scales.x.max < plot.data[0][plot.data[0].length - 1];
                 plot.setData(data, resetScales=!isZoomed);
                 status.textContent = "";
@@ -92,17 +90,8 @@ function go() {
 }
 
 // Specify graphs to plot.
-// Will create one large plot for all the MXC sensors of each fridge
-const FRIDGES = [
-    ["queenie", "mxc"],
-    ["scarlett", "mxc"],
-    ["tallulah", "mxc"],
-    ["ursula", "mxc"],
-    ["venus", "mxc"],
-    ["winona", "mxc"]
-];
-
-const FRIDGE_KEYS = FRIDGES.map((val) => val[0] + "." + val[1]);
+// Will create one large plot for all the coldest sensors of each fridge
+const FRIDGES = ["queenie", "scarlett", "tallulah", "ursula", "venus", "winona"];
 const COLOURS = ["blue", "red", "green", "purple", "orange", "pink"];
 
 go();

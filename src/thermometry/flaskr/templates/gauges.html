@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="w-full flex justify-between items-center">
+    <p>Click and drag to zoom in. Double click to reset the window. Automatically updates with live data.</p>
+    <h2 id="status">Loading page...</h2>
+</div>
+
+<div id="graphs"></div>
+<script src="{{ url_for('static', filename='utils.js') }}"></script>
+
+
+{% endblock %}

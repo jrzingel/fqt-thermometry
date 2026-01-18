@@ -19,10 +19,10 @@ def dashboard():
 
     if fridge is None:
         # Render all the fridges at once
-        return render_template("combined_dashboard.html", fridges=config.SIDEBAR_FRIDGES, title="Fridge Status", url=config.EXTERNAL_WEBSITE_URL)
+        return render_template("combined_dashboard.html", fridges=config.SIDEBAR_FRIDGES, menu="all", title="Fridge Status", url=config.EXTERNAL_WEBSITE_URL)
     else:
         # Render just one fridge
-        return render_template("dashboard.html", fridges=config.SIDEBAR_FRIDGES, fridge=fridge, title=f"{fridge.title()} Fridge Status", url=config.EXTERNAL_WEBSITE_URL, showPressures=showPressures)
+        return render_template("dashboard.html", fridges=config.SIDEBAR_FRIDGES, menu=fridge, title=f"{fridge.title()} Fridge Status", url=config.EXTERNAL_WEBSITE_URL, showPressures=showPressures)
 
 
 class DisabledSchema(Schema):
@@ -70,7 +70,7 @@ def view_alerts():
     with open(current_app.config["ALERT_PATH"], 'r') as f:
         status = json.load(f)
 
-    return render_template("alerts.html", fridges=config.SIDEBAR_FRIDGES, alerts=status["alerts"], last_updated=status["last_updated"])
+    return render_template("alerts.html", fridges=config.SIDEBAR_FRIDGES, menu="alerts", alerts=status["alerts"], last_updated=status["last_updated"])
 
 
 @bp.get("/alerts/<string:alert_type>.json")
@@ -96,3 +96,9 @@ def view_alert(alert_type: str):
         "alerts": alerts,
         "last_updated": status["last_updated"]
     })
+
+
+@bp.route("/gauges")
+@bp.doc(summary="Get HTML page of fridge gauges")
+def gauges():
+        return render_template("gauges.html", fridges=config.SIDEBAR_FRIDGES, menu="gauges", title="Fridge Status", url=config.EXTERNAL_WEBSITE_URL)

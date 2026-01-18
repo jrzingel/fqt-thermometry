@@ -36,21 +36,16 @@
             <!-- Sidebar -->
             <nav class="w-1/8 bg-gray-800 text-white p-4 space-y-4 overflow-y-auto">
                 <ul class="space-y-2">
-                    <li><a href="/dashboard" class="block p-2 hover:bg-gray-700 rounded">All</a></li>
+                    <li><a href="/dashboard" class="block p-2 hover:bg-gray-700 rounded {% if menu == "all" %}bg-gray-700{% endif %}">All</a></li>
+                    <hr class="border-gray-700 my-4">
                     {% for fridge_name in fridges %}
-                        <li><a href="/dashboard?fridge={{ fridge_name }}" class="block p-2 hover:bg-gray-700 rounded {% if fridge == fridge_name %}bg-gray-700{% endif %}">{{ fridge_name.capitalize() }}</a></li>
+                        <li><a href="/dashboard?fridge={{ fridge_name }}" class="block p-2 hover:bg-gray-700 rounded {% if menu == fridge_name %}bg-gray-700{% endif %}">{{ fridge_name.capitalize() }}</a></li>
                     {% endfor %}
+                    <hr class="border-gray-700 my-4">
+                    <li><a href="/dashboard/alerts" class="block p-2 hover:bg-gray-700 rounded {% if menu == "alerts" %}bg-gray-700{% endif %}">Alerts</a></li>
+                    <li><a href="/dashboard/gauges" class="block p-2 hover:bg-gray-700 rounded {% if menu == "gauges" %}bg-gray-700{% endif %}">Gauges</a></li>
+                    <li><a href="/docs" class="block p-2 hover:bg-gray-700 rounded">Docs</a></li>
                 </ul>
-                <div class="mt-auto">
-                    <a href="/dashboard/alerts" class="block bg-blue-600 text-white px-4 py-2 rounded-md shadow hover:bg-blue-700 text-center w-full">
-                        Alerts
-                    </a>
-                </div>
-                <div class="mt-auto">
-                    <a href="/docs" class="block bg-blue-600 text-white px-4 py-2 rounded-md shadow hover:bg-blue-700 text-center w-full">
-                        Docs
-                    </a>
-                </div>
             </nav>
 
             <!-- Main Content -->

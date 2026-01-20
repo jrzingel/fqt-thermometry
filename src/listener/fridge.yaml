@@ -8,6 +8,7 @@ secret: "fridge-key"  # used to sign messages
 logdir: "C:\\Users\\LabUser\\Logs"
 maxigauge: "maxigauge DATE.log"
 status: "status DATE.log"
+flow: "Flowmeter DATE.log"
 api_url: "status.example.com"
 #day_override: "1/8/2025"  # Upload old readings from this date
 

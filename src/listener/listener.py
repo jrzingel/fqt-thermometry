@@ -2,7 +2,7 @@
 # Copied and pasted onto the fridge PCs.
 # For an up-to-date version, check the repository on GitHub : https://github.com/jrzingel/fqt-thermometry
 
-__VERSION__ = "1.10"
+__VERSION__ = "1.11"
 
 import os
 import sys
@@ -216,6 +216,10 @@ def sync_position_with_server(config: dict) -> dict:
                 else:
                     last_seek = f.tell()
 
+    # flow only recorded as a latest measurement. So we just need to sync to the latest time
+    file_path = os.path.join(config["logdir"], today, config["flow"].replace("DATE", today))
+    file_positions["flow"] = os.path.getsize(file_path)
+
     print(file_positions)
     return file_positions
 
@@ -300,9 +304,15 @@ def listen():
                 if "cparun" in records.keys():  # compressor running (newer, meaning pulse tube is on)
                     upload_reading(read_time, fridge, "pulse_on", records["cparun"], secret)
                 if "cptempwi" in records.keys():  # compressor water input (older)
-                    upload_reading(read_time, fridge, "water_temp", celsius_or_kelvin_to_celsius(records["cptempwi"]), secret)  # KELVIN
+                    upload_reading(read_time, fridge, "water_in", celsius_or_kelvin_to_celsius(records["cptempwi"]), secret)  # KELVIN
                 if "cpatempwi" in records.keys():  # compressor water input (newer)
-                    upload_reading(read_time, fridge, "water_temp", celsius_or_kelvin_to_celsius(records["cpatempwi"]), secret)  # CELSIUS
+                    upload_reading(read_time, fridge, "water_in", celsius_or_kelvin_to_celsius(records["cpatempwi"]), secret)  # CELSIUS
+                if "cptempwo" in records.keys():  # compressor water output (older)
+                    upload_reading(read_time, fridge, "water_out", celsius_or_kelvin_to_celsius(records["cptempwo"]), secret)  # KELVIN
+                if "cpatempwo" in records.keys():  # compressor water output (newer)
+                    upload_reading(read_time, fridge, "water_out", celsius_or_kelvin_to_celsius(records["cpatempwo"]), secret)  # CELSIUS
+                if "tc400actualspd" in records.keys():  # turbo speed (tc400) (note there are two in parallel but we only log one)
+                    upload_reading(read_time, fridge, "turbo_speed", records["tc400actualspd"], secret)  # Hertz
 
                 # Optionally check the second compressor status if it exists (for XLD systems)
                 if "cparun_2" in records.keys():
@@ -313,6 +323,13 @@ def listen():
                     upload_reading(read_time, fridge + "2", "water_temp", celsius_or_kelvin_to_celsius(records["cpatempwi_2"]), secret)  # CELSIUS
             else:
                 print("Status log file has an unexpected number of columns. Skipping...")
+
+
+        # Check the flowmeter status.
+        file_positions, line = get_new_line(config, file_positions, today, config["flow"], "flow")
+        if line:
+            splits = line.strip().split(",")
+            upload_reading(format_time(splits[0:2]), fridge, "flow", float(splits[2]), secret)
 
         # TODO: On older fridges check the valve file to see if the pulse tube is on
 

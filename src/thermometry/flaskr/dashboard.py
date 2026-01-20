@@ -22,7 +22,7 @@ def dashboard():
         return render_template("combined_dashboard.html", fridges=config.SIDEBAR_FRIDGES, menu="all", title="Fridge Status", url=config.EXTERNAL_WEBSITE_URL)
     else:
         # Render just one fridge
-        return render_template("dashboard.html", fridges=config.SIDEBAR_FRIDGES, menu=fridge, title=f"{fridge.title()} Fridge Status", url=config.EXTERNAL_WEBSITE_URL, showPressures=showPressures)
+        return render_template("dashboard.html", fridges=config.SIDEBAR_FRIDGES, menu=fridge, fridge=fridge, title=f"{fridge.title()} Fridge Status", url=config.EXTERNAL_WEBSITE_URL, showPressures=showPressures)
 
 
 class DisabledSchema(Schema):

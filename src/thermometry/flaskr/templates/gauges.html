@@ -12,32 +12,38 @@
 <div class="grid grid-cols-2 gap-4">
 {% for fridge_name in fridges %}
     <div class="inline-flex space-x-4 py-2 rounded shadow">
-        <div class="bg-white dark:bg-gray-800 p-4 text-center">
+        <div class="bg-white dark:bg-gray-800 text-center">
             <h1 class="text-sm font-medium mb-1">{{ fridge_name.capitalize() }}</h1>
         </div>
 
         <div class="bg-white dark:bg-gray-800 p-2 text-center">
             <h3 class="text-sm font-medium mb-1">Turbo speed</h3>
-            <canvas id="{{ fridge_name }}-turbo" width="150" height="150" class="mx-auto"></canvas>
+            <canvas id="{{ fridge_name }}-turbo" width="120" height="120" class="mx-auto"></canvas>
             <div id="{{ fridge_name }}-turbo-value" class="mt-1 text-lg font-semibold">—</div>
         </div>
 
         <div class="bg-white dark:bg-gray-800 p-2 text-center">
             <h3 class="text-sm font-medium mb-1">Oil Temperature</h3>
-            <canvas id="{{ fridge_name }}-oil" width="150" height="150" class="mx-auto"></canvas>
+            <canvas id="{{ fridge_name }}-oil" width="120" height="120" class="mx-auto"></canvas>
             <div id="{{ fridge_name }}-oil-value" class="mt-1 text-lg font-semibold">—</div>
         </div>
 
         <div class="bg-white dark:bg-gray-800 p-2 text-center">
             <h3 class="text-sm font-medium mb-1">Water in</h3>
-            <canvas id="{{ fridge_name }}-water-in" width="150" height="150" class="mx-auto"></canvas>
+            <canvas id="{{ fridge_name }}-water-in" width="120" height="120" class="mx-auto"></canvas>
             <div id="{{ fridge_name }}-water-in-value" class="mt-1 text-lg font-semibold">—</div>
         </div>
 
         <div class="bg-white dark:bg-gray-800 p-2 text-center">
             <h3 class="text-sm font-medium mb-1">Water out</h3>
-            <canvas id="{{ fridge_name }}-water-out" width="150" height="150" class="mx-auto"></canvas>
+            <canvas id="{{ fridge_name }}-water-out" width="120" height="120" class="mx-auto"></canvas>
             <div id="{{ fridge_name }}-water-out-value" class="mt-1 text-lg font-semibold">—</div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-2 text-center">
+            <h3 class="text-sm font-medium mb-1">Circulation flow</h3>
+            <canvas id="{{ fridge_name }}-flow" width="120" height="120" class="mx-auto"></canvas>
+            <div id="{{ fridge_name }}-flow-value" class="mt-1 text-lg font-semibold">—</div>
         </div>
     <br>
     </div>
@@ -55,7 +61,7 @@ var commmon_opts = {
         color: '#000000' // Fill color
     },
     limitMax: true,     // If false, max value increases automatically if value > maxValue
-    limitMin: false,     // If true, the min value of the gauge will be fixed
+    limitMin: true,     // If true, the min value of the gauge will be fixed
     //colorStart: '#6FADCF',   // Colors
     //colorStop: '#8FC0DA',    // just experiment with them
     //strokeColor: '#E0E0E0',  // to see which ones work best for you
@@ -121,6 +127,19 @@ var water_out_opts = Object.assign({}, commmon_opts, {
     ],
 });
 
+var flow_opts = Object.assign({}, commmon_opts, {
+    staticLabels: {
+        font: "10px sans-serif",  // Specifies font
+        labels: [0, 0.25, 0.5, 0.75, 1],  // Print labels at these values
+        color: "#000000",  // Optional: Label text color
+        fractionDigits: 2  // Optional: Numerical precision. 0=round off.
+    },
+    staticZones: [
+        {#{strokeStyle: "#FFDD00", min: 0, max: 10}, // Yellow#}
+        {strokeStyle: "#30B32D", min: 0, max: 1}, // Green
+        {#{strokeStyle: "#FFDD00", min: 40, max: 50}, // Yellow#}
+    ],
+});
 
 function createGauge(canvasId, valueId, opts, maxValue, initial, unit) {
     var el = document.getElementById(canvasId);
@@ -141,29 +160,51 @@ function updateGauge(gaugeObj, value) {
     }
 }
 
-
 for (const fridge_name of {{ fridges|tojson }}) {
-    var turboGauge = createGauge(fridge_name + '-turbo', fridge_name + '-turbo-value', turbo_opts, 1000, 800, "Hz");
-    var oilGauge = createGauge(fridge_name + '-oil', fridge_name + '-oil-value', oil_opts, 80, 18, "C");
-    var waterInGauge = createGauge(fridge_name + '-water-in', fridge_name + '-water-in-value', water_in_opts, 30, 17, "C");
-    var waterOutGauge = createGauge(fridge_name + '-water-out', fridge_name + '-water-out-value', water_out_opts, 50, 25, "C");
+    var turboGauge = createGauge(fridge_name + '-turbo', fridge_name + '-turbo-value', turbo_opts, 1000, 0, "Hz");
+    var oilGauge = createGauge(fridge_name + '-oil', fridge_name + '-oil-value', oil_opts, 80, 0, "C");
+    var waterInGauge = createGauge(fridge_name + '-water-in', fridge_name + '-water-in-value', water_in_opts, 30, 0, "C");
+    var waterOutGauge = createGauge(fridge_name + '-water-out', fridge_name + '-water-out-value', water_out_opts, 50, 0, "C");
+    var flowGauge = createGauge(fridge_name + '-flow', fridge_name + '-flow-value', flow_opts, 1, 0, "mmol/s");
 
     // Store gauges in a global object for later updates
     if (!window.gauges) {
         window.gauges = {};
     }
     window.gauges[fridge_name] = {
-        turbo: turboGauge,
-        oil: oilGauge,
-        waterIn: waterInGauge,
-        waterOut: waterOutGauge
+        turbo_speed: turboGauge,
+        oil_temp: oilGauge,
+        water_in: waterInGauge,
+        water_out: waterOutGauge
     };
 }
-{#var turboGauge = createGauge('turbo', 'turbo-value', turbo_opts, 1000, 800, "Hz");#}
-{#var oilGauge = createGauge('oil', 'oil-value', oil_opts, 80, 18, "C");#}
-{#var waterInGauge = createGauge('water-in', 'water-in-value', water_in_opts, 30, 17, "C");#}
-{#var waterOutGauge = createGauge('water-out', 'water-out-value', water_out_opts, 50, 25, "C");#}
 
+function refreshGauges() {
+    document.getElementById("status").textContent = "Fetching data...";
+    fetchLatestFridgeSensorsFromAPI("{{ url }}", QUERY)
+        .then(data => {
+            Object.entries(data.readings).forEach(([fridge, sensors]) => {
+                Object.entries(sensors).forEach(([sensor, {reading, time}]) => {
+                    console.log(fridge, sensor, reading, time);
+
+                    if (window.gauges && window.gauges[fridge] && window.gauges[fridge][sensor]) {
+                        updateGauge(window.gauges[fridge][sensor], reading);
+                    }
+                });
+            });
+            document.getElementById("status").textContent = "";
+        })
+        .catch((error) => {
+            document.getElementById("status").textContent = "Error!";
+            console.log(error);
+        });
+}
+
+const QUERY = {{ fridges|tojson }}.flatMap(fridge => ["turbo_speed", "oil_temp", "water_in", "water_out", "flow"].map(sensor => [fridge, sensor]));
+console.log(QUERY);
+
+refreshGauges();
+setInterval(refreshGauges, 30_000);
 
 </script>
 

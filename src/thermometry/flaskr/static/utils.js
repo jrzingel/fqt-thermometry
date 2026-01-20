@@ -118,3 +118,18 @@ async function getColdestFridgeTempsFromAPI(server, fridges) {
     }
     return data;
 }
+
+async function fetchLatestFridgeSensorsFromAPI(server, query) {
+    const requestData = {
+        query: query,
+    };
+
+    const response = await fetch(server + '/api/v1/gauges', {
+        method: 'POST',
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(requestData)
+    });
+    return await response.json();
+}

@@ -17,7 +17,7 @@ from .Alert import Alert
 class HotWaterTemp(Alert):
     def update_data(self):
         return {
-            "water_temp": self._get_latest("water_temp")
+            "water_temp": self._get_latest("water_in")
         }
 
     def is_in_alarm(self) -> bool:

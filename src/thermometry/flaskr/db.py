@@ -39,9 +39,12 @@ def add_fridge(name: str) -> int:
     cursor.execute("""
         INSERT INTO fridge (name)
         VALUES (%s)
+        ON CONFLICT (name) DO UPDATE
+            SET name = EXCLUDED.name
         RETURNING id
         """, (name,))
     f_id = cursor.fetchone()[0]
+    print(f"Added fridge {name}, assigned ID {f_id}")
     db.commit()
     cursor.close()
     return f_id
@@ -54,9 +57,12 @@ def add_sensor(name: str, fridge_id: int, latest=0) -> int:
     cursor.execute("""
         INSERT INTO sensor (name, fridge_id, latest)
         VALUES (%s, %s, %s)
+        ON CONFLICT (name, fridge_id) DO UPDATE
+            SET name = EXCLUDED.name
         RETURNING id
         """, (name, fridge_id, latest))
     s_id = cursor.fetchone()[0]
+    print(f"Added sensor {name} to fridge ID {fridge_id} with latest={latest}, assigned ID {s_id}")
     db.commit()
     cursor.close()
     return s_id
@@ -192,7 +198,6 @@ def init_db_command():
 
 @click.command('create-default-fridges')
 def create_default_fridges_command():
-    init_db()
     create_default_fridges()
     click.echo('Created default fridges.')
 

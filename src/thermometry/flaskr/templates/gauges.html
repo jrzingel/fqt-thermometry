@@ -156,7 +156,7 @@ function createGauge(canvasId, valueId, opts, maxValue, initial, unit) {
 function updateGauge(gaugeObj, value) {
     gaugeObj.gauge.set(value);
     if (gaugeObj.valueEl) {
-        gaugeObj.valueEl.textContent = value + " " + gaugeObj.unit;
+        gaugeObj.valueEl.textContent = Number(value.toFixed(2)) + " " + gaugeObj.unit;
     }
 }
 

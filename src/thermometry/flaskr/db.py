@@ -66,7 +66,7 @@ def create_default_fridges():
     """Create the default fridges and associated sensors"""
     fridges = ["queenie", "scarlett", "tallulah", "ursula", "venus", "winona"]
     sensors = ["50K", "4K", "magnet", "still", "mxc", "P1", "P2", "P3", "P4", "P5", "P6"]
-    latest_sensors = ["pulse_on", "oil_temp", "water_temp"]
+    latest_sensors = ["pulse_on", "oil_temp", "water_in", "water_out", "flow", "turbo_speed"]
     for fridge in fridges:
         f_id = add_fridge(fridge)
         print(fridge, f_id)

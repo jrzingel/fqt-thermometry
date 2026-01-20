@@ -8,7 +8,7 @@ import sqlite3
 
 from flask import g, request, current_app
 from apiflask import APIBlueprint, Schema, abort
-from apiflask.fields import Integer, String, Float, DateTime, Boolean, List, Dict
+from apiflask.fields import Integer, String, Float, DateTime, Boolean, List, Dict, Nested
 import pandas as pd
 import numpy as np
 from functools import reduce
@@ -17,8 +17,7 @@ import hmac
 import hashlib
 
 
-from thermometry.flaskr.db import get_db, fetch_readings
-
+from thermometry.flaskr.db import get_db, fetch_readings, fetch_latest_readings
 
 bp = APIBlueprint("api", __name__, url_prefix="/api")
 
@@ -47,7 +46,7 @@ class SingleReadingSchema(Schema):
 @bp.get("/v1/latest")
 @bp.input(LatestReadingSchema, location="query")
 @bp.output(SingleReadingSchema)
-@bp.doc(summary="Get the latest reading for a particular sensor. This is the only endpoint that can be used to fetch non-historical readings.")
+@bp.doc(summary="Get the latest reading for a particular sensor. This is the only endpoint that can be used to fetch both non-historical and historical readings.")
 def getLatestReading(query_data: dict):
     """Get the latest reading of a given sensor."""
     db = get_db()
@@ -93,6 +92,42 @@ def getLatestReading(query_data: dict):
         }
     cur.close()
     abort(404, f"No data for {query_data['fridge']}.{query_data['sensor']} found")
+
+
+class GaugesRequestSchema(Schema):
+    """Schema for specifying a range of readings to return"""
+    query = List(List(String()), required=True)
+
+
+class GaugeReadingSchema(Schema):
+    time = DateTime(required=True)
+    reading = Float(required=True)
+
+class GaugesResponseSchema(Schema):
+    readings = Dict(
+        keys=String(), # fridge
+        values=Dict(
+            keys=String(),  # sensor
+            values=Nested(GaugeReadingSchema))
+    )
+
+
+@bp.post("/v1/gauges")
+@bp.input(GaugesRequestSchema)
+@bp.output(GaugesResponseSchema)
+@bp.doc(summary="Get the latest reading for a particular sensor. This is the only endpoint that can be used to fetch both non-historical and historical readings.")
+def getGauges(json_data : dict):
+    """Get the latest readings of a given sensors from lastest-db only."""
+    df = fetch_latest_readings(json_data["query"])
+
+    readings = {}
+    for (fridge, sensor), row in df.set_index(['fridge', 'sensor']).iterrows():
+        readings.setdefault(fridge, {})[sensor] = {
+            "time": row["time"],
+            "reading": row["reading"],
+        }
+
+    return {"readings": readings}
 
 
 class RangedReadingSchema(Schema):

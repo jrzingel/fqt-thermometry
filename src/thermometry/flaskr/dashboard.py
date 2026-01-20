@@ -101,4 +101,5 @@ def view_alert(alert_type: str):
 @bp.route("/gauges")
 @bp.doc(summary="Get HTML page of fridge gauges")
 def gauges():
-        return render_template("gauges.html", fridges=config.SIDEBAR_FRIDGES, menu="gauges", title="Gauges", url=config.EXTERNAL_WEBSITE_URL)
+    # Work out the gauges to show for each fridge
+    return render_template("gauges.html", fridges=config.SIDEBAR_FRIDGES, menu="gauges", title="Gauges", url=config.EXTERNAL_WEBSITE_URL)

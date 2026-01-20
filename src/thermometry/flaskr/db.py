@@ -160,6 +160,30 @@ def fetch_readings(query: list[tuple], earliest_stamp: int, latest_stamp: int, b
     return grouped
 
 
+def fetch_latest_readings(query: list[tuple]) -> pd.DataFrame:
+    """Fetch the latest sensor readings for the given fridge/sensor querys"""
+    # query should be of the form: [("fridge", "sensor"), ("fridge", "sensor"), ... ]
+    db = get_db()
+    cur = db.cursor()
+
+    # Build dynamic WHERE clause
+    WHERE_clause = " OR ".join([f"(f.name = %s AND s.name = %s)" for _ in query])
+    cur.execute(f"""
+    SELECT f.name AS fridge, s.name AS sensor, lr.time, lr.reading
+    FROM latest_reading lr
+    JOIN sensor s ON lr.sensor_id = s.id
+    JOIN fridge f ON s.fridge_id = f.id
+    WHERE ({WHERE_clause})
+    """, [v for pair in query for v in pair])
+    result = cur.fetchall()
+    cur.close()
+
+    # Pivot records together so that they share the same time axis
+    df = pd.DataFrame.from_records(result, columns=['fridge', 'sensor', 'time', 'reading'])
+    df['time'] = pd.to_datetime(df['time'], utc=True)  # Force datetime object for daylight savings
+    return df
+
+
 @click.command('init-db')
 def init_db_command():
     init_db()

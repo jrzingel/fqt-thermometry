@@ -4,34 +4,44 @@
 <script src="{{ url_for('static', filename='gauge.min.js') }}"></script>
 
 <div class="w-full flex justify-between items-center">
-    <p>Click and drag to zoom in. Double click to reset the window. Automatically updates with live data.</p>
+    <p>Automatically updates with live data.</p>
     <h2 id="status">Loading page...</h2>
 </div>
+<br>
 
-<div class="flex space-x-4 overflow-x-auto py-4">
-    <div class="bg-white dark:bg-gray-800 p-4 rounded shadow text-center">
-        <h3 class="text-sm font-medium mb-2">Turbo speed</h3>
-        <canvas id="turbo" width="200" height="180" class="mx-auto"></canvas>
-        <div id="turbo-value" class="mt-2 text-lg font-semibold">—</div>
-    </div>
+<div class="grid grid-cols-2 gap-4">
+{% for fridge_name in fridges %}
+    <div class="inline-flex space-x-4 py-2 rounded shadow">
+        <div class="bg-white dark:bg-gray-800 p-4 text-center">
+            <h1 class="text-sm font-medium mb-1">{{ fridge_name.capitalize() }}</h1>
+        </div>
 
-    <div class="bg-white dark:bg-gray-800 p-4 rounded shadow text-center">
-        <h3 class="text-sm font-medium mb-2">Oil Temperature</h3>
-        <canvas id="oil" width="200" height="180" class="mx-auto"></canvas>
-        <div id="oil-value" class="mt-2 text-lg font-semibold">—</div>
-    </div>
+        <div class="bg-white dark:bg-gray-800 p-2 text-center">
+            <h3 class="text-sm font-medium mb-1">Turbo speed</h3>
+            <canvas id="{{ fridge_name }}-turbo" width="150" height="150" class="mx-auto"></canvas>
+            <div id="{{ fridge_name }}-turbo-value" class="mt-1 text-lg font-semibold">—</div>
+        </div>
 
-    <div class="bg-white dark:bg-gray-800 p-4 rounded shadow text-center">
-        <h3 class="text-sm font-medium mb-2">Water in</h3>
-        <canvas id="water-in" width="200" height="180" class="mx-auto"></canvas>
-        <div id="water-in-value" class="mt-2 text-lg font-semibold">—</div>
-    </div>
+        <div class="bg-white dark:bg-gray-800 p-2 text-center">
+            <h3 class="text-sm font-medium mb-1">Oil Temperature</h3>
+            <canvas id="{{ fridge_name }}-oil" width="150" height="150" class="mx-auto"></canvas>
+            <div id="{{ fridge_name }}-oil-value" class="mt-1 text-lg font-semibold">—</div>
+        </div>
 
-    <div class="bg-white dark:bg-gray-800 p-4 rounded shadow text-center">
-        <h3 class="text-sm font-medium mb-2">Water out</h3>
-        <canvas id="water-out" width="200" height="180" class="mx-auto"></canvas>
-        <div id="water-out-value" class="mt-2 text-lg font-semibold">—</div>
+        <div class="bg-white dark:bg-gray-800 p-2 text-center">
+            <h3 class="text-sm font-medium mb-1">Water in</h3>
+            <canvas id="{{ fridge_name }}-water-in" width="150" height="150" class="mx-auto"></canvas>
+            <div id="{{ fridge_name }}-water-in-value" class="mt-1 text-lg font-semibold">—</div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-2 text-center">
+            <h3 class="text-sm font-medium mb-1">Water out</h3>
+            <canvas id="{{ fridge_name }}-water-out" width="150" height="150" class="mx-auto"></canvas>
+            <div id="{{ fridge_name }}-water-out-value" class="mt-1 text-lg font-semibold">—</div>
+        </div>
+    <br>
     </div>
+{% endfor %}
 </div>
 
 <script>
@@ -131,50 +141,29 @@ function updateGauge(gaugeObj, value) {
     }
 }
 
-{#var target = document.getElementById('turbo'); // your canvas element#}
-{#var gauge = new Gauge(target).setOptions(turbo_opts); // create sexy gauge!#}
-{#gauge.maxValue = 1000; // set max gauge value#}
-{#gauge.setMinValue(0);  // Prefer setter over gauge.minValue = 0#}
-{#gauge.animationSpeed = 32; // set animation speed (32 is default value)#}
-{#gauge.set(512); // set actual value#}
 
-{#var target = document.getElementById('oil'); // your canvas element#}
-{#var gauge = new Gauge(target).setOptions(oil_opts); // create sexy gauge!#}
-{#gauge.maxValue = 80; // set max gauge value#}
-{#gauge.setMinValue(0);  // Prefer setter over gauge.minValue = 0#}
-{#gauge.animationSpeed = 32; // set animation speed (32 is default value)#}
-{#gauge.set(32); // set actual value#}
+for (const fridge_name of {{ fridges|tojson }}) {
+    var turboGauge = createGauge(fridge_name + '-turbo', fridge_name + '-turbo-value', turbo_opts, 1000, 800, "Hz");
+    var oilGauge = createGauge(fridge_name + '-oil', fridge_name + '-oil-value', oil_opts, 80, 18, "C");
+    var waterInGauge = createGauge(fridge_name + '-water-in', fridge_name + '-water-in-value', water_in_opts, 30, 17, "C");
+    var waterOutGauge = createGauge(fridge_name + '-water-out', fridge_name + '-water-out-value', water_out_opts, 50, 25, "C");
 
-var turboGauge = createGauge('turbo', 'turbo-value', turbo_opts, 1000, 800, "Hz");
-var oilGauge = createGauge('oil', 'oil-value', oil_opts, 80, 18, "C");
-var waterInGauge = createGauge('water-in', 'water-in-value', water_in_opts, 30, 17, "C");
-var waterOutGauge = createGauge('water-out', 'water-out-value', water_out_opts, 50, 25, "C");
-
-function refreshData() {
-    let status = document.getElementById("status");
-    status.textContent = "Loading data...";
-    fetch("/api/gauges")
-        .then((response) => response.json())
-        .then((data) => {
-            turboGauge.gauge.set(data.turbo_speed);
-            turboGauge.valueEl.textContent = data.turbo_speed + " Hz";
-
-            oilGauge.gauge.set(data.oil_temp);
-            oilGauge.valueEl.textContent = data.oil_temp + " °C";
-
-            waterInGauge.gauge.set(data.water_in);
-            waterInGauge.valueEl.textContent = data.water_in + " °C";
-
-            waterOutGauge.gauge.set(data.water_out);
-            waterOutGauge.valueEl.textContent = data.water_out + " °C";
-
-            status.textContent = "";
-        })
-        .catch((error) => {
-            status.textContent = "Error!";
-            console.log(error);
-        });
+    // Store gauges in a global object for later updates
+    if (!window.gauges) {
+        window.gauges = {};
+    }
+    window.gauges[fridge_name] = {
+        turbo: turboGauge,
+        oil: oilGauge,
+        waterIn: waterInGauge,
+        waterOut: waterOutGauge
+    };
 }
+{#var turboGauge = createGauge('turbo', 'turbo-value', turbo_opts, 1000, 800, "Hz");#}
+{#var oilGauge = createGauge('oil', 'oil-value', oil_opts, 80, 18, "C");#}
+{#var waterInGauge = createGauge('water-in', 'water-in-value', water_in_opts, 30, 17, "C");#}
+{#var waterOutGauge = createGauge('water-out', 'water-out-value', water_out_opts, 50, 25, "C");#}
+
 
 </script>
 

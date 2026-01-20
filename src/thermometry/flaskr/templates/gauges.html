@@ -130,9 +130,9 @@ var water_out_opts = Object.assign({}, commmon_opts, {
 var flow_opts = Object.assign({}, commmon_opts, {
     staticLabels: {
         font: "10px sans-serif",  // Specifies font
-        labels: [0, 250, 500, 750, 1000],  // Print labels at these values
+        labels: [0, 0.25, 0.5, 0.75, 1],  // Print labels at these values
         color: "#000000",  // Optional: Label text color
-        fractionDigits: 0  // Optional: Numerical precision. 0=round off.
+        fractionDigits: 2  // Optional: Numerical precision. 0=round off.
     },
     staticZones: [
         {#{strokeStyle: "#FFDD00", min: 0, max: 10}, // Yellow#}
@@ -165,7 +165,7 @@ for (const fridge_name of {{ fridges|tojson }}) {
     var oilGauge = createGauge(fridge_name + '-oil', fridge_name + '-oil-value', oil_opts, 80, 0, "C");
     var waterInGauge = createGauge(fridge_name + '-water-in', fridge_name + '-water-in-value', water_in_opts, 30, 0, "C");
     var waterOutGauge = createGauge(fridge_name + '-water-out', fridge_name + '-water-out-value', water_out_opts, 50, 0, "C");
-    var flowGauge = createGauge(fridge_name + '-flow', fridge_name + '-flow-value', flow_opts, 1000, 0, "mol/s");
+    var flowGauge = createGauge(fridge_name + '-flow', fridge_name + '-flow-value', flow_opts, 1, 0, "mmol/s");
 
     // Store gauges in a global object for later updates
     if (!window.gauges) {
@@ -175,7 +175,8 @@ for (const fridge_name of {{ fridges|tojson }}) {
         turbo_speed: turboGauge,
         oil_temp: oilGauge,
         water_in: waterInGauge,
-        water_out: waterOutGauge
+        water_out: waterOutGauge,
+        flow: flowGauge
     };
 }
 
@@ -188,10 +189,6 @@ function refreshGauges() {
                     console.log(fridge, sensor, reading, time);
 
                     if (window.gauges && window.gauges[fridge] && window.gauges[fridge][sensor]) {
-                        if (sensor === "flow") {
-                            // Convert from mmol/s to mol/s
-                            reading = reading * 1000;
-                        }
                         updateGauge(window.gauges[fridge][sensor], reading);
                     }
                 });

@@ -3,34 +3,42 @@
 {% block content %}
 
 
-<div class="w-full flex justify-between items-center">
-    <div>
-        <p>Click and drag to zoom in. Double click to reset the window. Automatically updates with live data.</p>
-        {% if showPressures %}
-            <p>See fridge schematic <a href="{{ url_for('static', filename='images/fridge.webp') }}" target="_blank" class="text-blue-600 underline underline-offset-2 hover:text-blue-800">here</a></p>
-        {% endif %}
+<div class="w-full flex flex-col md:flex-row md:justify-between md:items-center gap-3">
+    <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+        <div>
+            <p class="text-sm md:text-base">
+                <span class="hidden md:inline">Click and drag to zoom in. Double click to reset.</span>
+                <span class="md:hidden">Pinch to zoom. Double tap to reset.</span>
+                Auto-updates with live data.
+            </p>
+            {% if showPressures %}
+                <p class="text-sm">See fridge schematic <a href="{{ url_for('static', filename='images/fridge.webp') }}" target="_blank" class="text-blue-600 underline underline-offset-2 hover:text-blue-800">here</a></p>
+            {% endif %}
+        </div>
+        <h2 id="status" class="text-sm font-medium">Loading page</h2>
     </div>
 
-    <div class="flex items-bottom space-x-0 rounded-md border border-gray-300 bg-white">
-        <button id="temperaturesBtn" class="px-2 py-2 rounded-md text-gray-700 bg-white hover:bg-gray-200 focus:outline-none">Temperatures</button>
-        <button id="pressuresBtn" class="px-2 py-2 rounded-md text-gray-700 bg-white hover:bg-gray-200 focus:outline-none">Pressures</button>
+    <div class="flex items-center gap-2">
+        <div class="flex rounded-md border border-gray-300 bg-white">
+            <button id="temperaturesBtn" class="px-2 py-2 rounded-md text-gray-700 bg-white hover:bg-gray-200 focus:outline-none text-sm">Temperatures</button>
+            <button id="pressuresBtn" class="px-2 py-2 rounded-md text-gray-700 bg-white hover:bg-gray-200 focus:outline-none text-sm">Pressures</button>
+        </div>
     </div>
 
-    <div class="w-1/5">
+    <div class="w-full md:w-1/5">
         <div class="flex justify-between items-center">
             <label for="startTime" class="block text-sm font-medium text-gray-700">Time from:</label>
-            <h2 id="status">Loading page</h2>
         </div>
-        <div class="flex items-center space-x-2 mt-2">
+        <div class="flex items-center space-x-2 mt-1">
             <input type="datetime-local" id="startTime" class="flex-grow min-w-0 p-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
             <button id="goButton" class="bg-blue-600 text-white px-2 py-2 rounded-md shadow hover:bg-blue-700 text-center">Go</button>
         </div>
-        <div class="flex justify-between items-center gap-2 p-1 mt-2 rounded-md bg-gray-100">
-            <button id="1" class="timeButton w-12 h-6 bg-gray-100 rounded-md hover:bg-gray-200 text-center">1H</button>
-            <button id="3" class="timeButton w-12 h-6 bg-gray-100 rounded-md hover:bg-gray-200 text-center">3H</button>
-            <button id="12" class="timeButton w-12 h-6 bg-gray-100 rounded-md hover:bg-gray-200 text-center">12H</button>
-            <button id="24" class="timeButton w-12 h-6 bg-gray-100 rounded-md hover:bg-gray-200 text-center">1D</button>
-            <button id="72" class="timeButton w-12 h-6 bg-gray-100 rounded-md hover:bg-gray-200 text-center">3D</button>
+        <div class="flex flex-wrap items-center gap-1 p-1 mt-1 rounded-md bg-gray-100">
+            <button id="1" class="timeButton flex-1 min-w-0 h-8 bg-gray-100 rounded-md hover:bg-gray-200 text-center text-sm">1H</button>
+            <button id="3" class="timeButton flex-1 min-w-0 h-8 bg-gray-100 rounded-md hover:bg-gray-200 text-center text-sm">3H</button>
+            <button id="12" class="timeButton flex-1 min-w-0 h-8 bg-gray-100 rounded-md hover:bg-gray-200 text-center text-sm">12H</button>
+            <button id="24" class="timeButton flex-1 min-w-0 h-8 bg-gray-100 rounded-md hover:bg-gray-200 text-center text-sm">1D</button>
+            <button id="72" class="timeButton flex-1 min-w-0 h-8 bg-gray-100 rounded-md hover:bg-gray-200 text-center text-sm">3D</button>
         </div>
     </div>
 </div>

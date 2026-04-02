@@ -4,14 +4,14 @@
 <script src="{{ url_for('static', filename='gauge.min.js') }}"></script>
 
 <div class="w-full flex justify-between items-center">
-    <p>Automatically updates with live data.</p>
-    <h2 id="status">Loading page...</h2>
+    <p class="text-sm md:text-base">Automatically updates with live data.</p>
+    <h2 id="status" class="text-sm font-medium">Loading page...</h2>
 </div>
 <br>
 
-<div class="grid grid-cols-2 gap-4">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 {% for fridge_name in fridges %}
-    <div class="inline-flex space-x-4 py-2 rounded shadow">
+    <div class="flex flex-wrap items-start gap-2 py-2 rounded shadow">
         <div class="bg-white dark:bg-gray-800 text-center">
             <h1 class="text-sm font-medium mb-1">{{ fridge_name.capitalize() }}</h1>
         </div>

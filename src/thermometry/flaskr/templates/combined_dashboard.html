@@ -2,9 +2,13 @@
 
 {% block content %}
 
-<div class="w-full flex justify-between items-center">
-    <p>Click and drag to zoom in. Double click to reset the window. Automatically updates with live data.</p>
-    <h2 id="status">Loading page...</h2>
+<div class="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+    <p class="text-sm md:text-base">
+        <span class="hidden md:inline">Click and drag to zoom in. Double click to reset.</span>
+        <span class="md:hidden">Pinch to zoom. Double tap to reset.</span>
+        Auto-updates with live data.
+    </p>
+    <h2 id="status" class="text-sm font-medium">Loading page...</h2>
 </div>
 
 <div id="graphs"></div>

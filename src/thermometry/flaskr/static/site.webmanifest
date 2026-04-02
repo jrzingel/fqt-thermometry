@@ -1,6 +1,9 @@
 {
+  "id": "/dashboard",
   "name": "FQT Status",
   "short_name": "FQT Status",
+  "start_url": "/dashboard",
+  "scope": "/",
   "icons": [
     {
       "src": "/static/web-app-manifest-192x192.png",

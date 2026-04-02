@@ -25,18 +25,31 @@
     <script src="{{ url_for('static', filename='uPlot.iife.min.js') }}"></script>
     <script src="{{ url_for('static', filename='gauge.min.js') }}"></script>
     <script src="{{ url_for('static', filename='utils.js') }}"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/sw.js');
+        }
+    </script>
 </head>
 <body class="h-screen overflow-hidden bg-gray-100">
     <div class="flex flex-col h-screen">
 
     <!-- Banner -->
-    <header class="bg-blue-600 text-white text-center text-xl p-4 shadow-md">
-            FQT Lab Thermometry
+    <header class="bg-blue-600 text-white text-xl p-4 shadow-md flex items-center">
+            <button id="menuToggle" class="md:hidden mr-3 focus:outline-none" aria-label="Toggle menu">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </button>
+            <span class="flex-1 text-center md:text-center">FQT Lab Thermometry</span>
     </header>
 
-    <div class="flex flex-1 h-full overflow-hidden">
+    <div class="flex flex-1 h-full overflow-hidden relative">
+            <!-- Sidebar overlay (mobile) -->
+            <div id="sidebarOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"></div>
+
             <!-- Sidebar -->
-            <nav class="w-1/8 bg-gray-800 text-white p-4 space-y-4 overflow-y-auto">
+            <nav id="sidebar" class="fixed inset-y-0 left-0 z-30 w-56 bg-gray-800 text-white p-4 space-y-4 overflow-y-auto transform -translate-x-full transition-transform duration-200 md:relative md:translate-x-0 md:w-1/8 md:block">
                 <ul class="space-y-2">
                     <li><a href="/dashboard" class="block p-2 hover:bg-gray-700 rounded {% if menu == "all" %}bg-gray-700{% endif %}">All</a></li>
                     <hr class="border-gray-700 my-4">
@@ -51,14 +64,49 @@
             </nav>
 
             <!-- Main Content -->
-            <main class="flex-1 p-6 overflow-y-auto">
+            <main class="flex-1 p-3 md:p-6 overflow-y-auto">
                 <h1 class="text-2xl font-bold mb-4">{{ title }}</h1>
-                <div id="workspace" class="bg-white p-6 rounded-lg shadow-md">
+                <div id="workspace" class="bg-white p-3 md:p-6 rounded-lg shadow-md">
                     {% block content %}{% endblock %}
                 </div>
             </main>
         </div>
 
     </div>
+
+    <script>
+    (function() {
+        const toggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+
+        function openMenu() {
+            sidebar.classList.remove('-translate-x-full');
+            sidebar.classList.add('translate-x-0');
+            overlay.classList.remove('hidden');
+        }
+
+        function closeMenu() {
+            sidebar.classList.remove('translate-x-0');
+            sidebar.classList.add('-translate-x-full');
+            overlay.classList.add('hidden');
+        }
+
+        toggle.addEventListener('click', function() {
+            if (sidebar.classList.contains('-translate-x-full')) {
+                openMenu();
+            } else {
+                closeMenu();
+            }
+        });
+
+        overlay.addEventListener('click', closeMenu);
+
+        // Close menu when a nav link is tapped
+        sidebar.querySelectorAll('a').forEach(function(link) {
+            link.addEventListener('click', closeMenu);
+        });
+    })();
+    </script>
 </body>
 </html>

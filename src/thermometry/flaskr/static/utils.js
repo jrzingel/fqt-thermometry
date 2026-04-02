@@ -21,7 +21,7 @@ function getSize(single=true) {
         // Single column
         return {
             width: w * 0.97,
-            height: w * 0.3
+            height: Math.max(w * 0.3, 200)
         }
     } else {
         // Double column

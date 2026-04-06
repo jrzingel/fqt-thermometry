@@ -4,7 +4,7 @@ import logging
 logging.getLogger('werkzeug').setLevel(logging.CRITICAL)  # disable werkzeug logging
 
 import os
-from flask import url_for, redirect, request
+from flask import url_for, redirect, request, send_from_directory
 import time
 from apiflask import APIFlask
 import mimetypes
@@ -34,6 +34,11 @@ def create_app():
     @app.doc(hide=True)
     def root():
         return redirect(url_for("dashboard.dashboard"))
+
+    @app.route("/site.webmanifest")
+    @app.doc(hide=True)
+    def manifest():
+        return send_from_directory(app.static_folder, "site.webmanifest", mimetype="application/manifest+json")
 
     @app.after_request
     def after_request(response):

@@ -8,11 +8,12 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#81d1e3">
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon-96x96.png') }}" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}" />
-    <link rel="manifest" href="{{  url_for('static', filename='site.webmanifest') }}" />
+    <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='uPlot.min.css') }}">
@@ -25,13 +26,11 @@
     <script src="{{ url_for('static', filename='uPlot.iife.min.js') }}"></script>
     <script src="{{ url_for('static', filename='gauge.min.js') }}"></script>
     <script src="{{ url_for('static', filename='utils.js') }}"></script>
-    <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/static/sw.js');
-        }
-    </script>
 </head>
 <body class="h-screen overflow-hidden bg-gray-100">
+    <div id="offline-banner" class="hidden bg-yellow-500 text-black text-center text-sm py-1 px-4 font-medium" role="alert">
+        You are offline. Data may be outdated.
+    </div>
     <div class="flex flex-col h-screen">
 
     <!-- Banner -->
@@ -107,6 +106,17 @@
             link.addEventListener('click', closeMenu);
         });
     })();
+
+    // Offline detection
+    function updateOnlineStatus() {
+        var banner = document.getElementById('offline-banner');
+        if (banner) {
+            banner.classList.toggle('hidden', navigator.onLine);
+        }
+    }
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    updateOnlineStatus();
     </script>
 </body>
 </html>

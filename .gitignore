@@ -16,3 +16,4 @@ status.json
 config.py
 config.yaml
 *.exe
+.claude/

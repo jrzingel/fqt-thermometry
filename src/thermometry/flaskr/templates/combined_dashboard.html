@@ -18,6 +18,8 @@
 
 function setupPlots(num_plots) {
     console.time("chart");
+    const w = document.getElementById("graphs").clientWidth;
+
     let data = Array.from({ length: num_plots + 1 }, () => []);
 
     const cursorOpts = {
@@ -39,7 +41,7 @@ function setupPlots(num_plots) {
 
     const opts_main = {
         title: "Coldest Fridge Temperatures",
-        ...getSize(),
+        ...getSize(true, w),
         focus: {
             alpha: 0.3,
         },
@@ -97,7 +99,7 @@ function go() {
 const FRIDGES = ["queenie", "scarlett", "tallulah", "ursula", "venus", "winona"];
 const COLOURS = ["blue", "red", "green", "purple", "orange", "pink"];
 
-go();
+window.addEventListener("load", go);
 
 </script>
 {% endblock %}

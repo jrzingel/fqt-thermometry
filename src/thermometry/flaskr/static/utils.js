@@ -13,20 +13,20 @@ function setDefaultTimestamps(hours_ago=24) {
     document.getElementById("startTime").value = timeAgo.toISOString().slice(0, 16);
 }
 
-function getSize(single=true) {
-    let w = document.getElementById("workspace").clientWidth;  // Scale everything based on this
+function getSize(single=true, w=null) {
+    if (w === null) w = document.getElementById("graphs").clientWidth;
 
     // System that determines if the plots are two columns or single column
     if (single || w < 700) {
         // Single column
         return {
-            width: w * 0.97,
+            width: w,
             height: Math.max(w * 0.3, 200)
         }
     } else {
         // Double column
         return {
-            width: w * 0.97 * 0.5 * 0.95,
+            width: Math.floor(w / 2),
             height: Math.min(w * 0.25, 200)
         }
     }

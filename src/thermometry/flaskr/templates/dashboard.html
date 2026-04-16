@@ -74,6 +74,11 @@ if (type === 'pressures') {
 function setupPlots(num_plots) {
     console.time("chart");
 
+    // Capture width once before any uPlot instances are added to #graphs,
+    // since adding inline-block chart elements changes #graphs.clientWidth.
+    const w = document.getElementById("graphs").clientWidth;
+    console.log(w);
+
     let data = Array.from({ length: num_plots + 1 }, () => []);
     let mooSync = uPlot.sync("moo");
 
@@ -103,7 +108,8 @@ function setupPlots(num_plots) {
 
     const opts_main = {
         title: TITLE,
-        ...getSize(),
+        width: w,
+        height: Math.min(w * 0.3, 200),
         focus: {
             alpha: 0.3,
         },
@@ -128,7 +134,8 @@ function setupPlots(num_plots) {
     for (const i of SUBPLOT_ORDER) {
         // Plot [data[0] (timestamps), data[i] (sensor data)]
         let opts = {
-            ...getSize(false),
+            width: w < 700 ? w : Math.floor(w/2),
+            height: w < 700 ? Math.min(w * 0.3, 200) : Math.min(w * 0.2, 200),
             focus: {
                 alpha: 0.3,
             },
@@ -147,6 +154,7 @@ function setupPlots(num_plots) {
                 {  values: (u, v, w) => v == null ? [] : formatNumbers(v, dp=2) },
             ],
         }
+        console.log(opts);
 
         let uplot = new uPlot(opts, [data[0], data[i+1]], document.getElementById("graphs"));
         uplots.push(uplot);
@@ -154,9 +162,16 @@ function setupPlots(num_plots) {
 
     // Dynamically change the size of the plot when required
     window.addEventListener("resize", function() {
-        uplot_main.setSize(getSize());
+        const w = document.getElementById("graphs").clientWidth;
+        uplot_main.setSize({
+            width: w,
+            height: Math.max(w * 0.3, 200),
+        });
         for (let uplot of uplots) {
-            uplot.setSize(getSize(false));
+            uplot.setSize({
+                width: w < 700 ? w : Math.floor(w/2),
+                height: w < 700 ? Math.min(w * 0.3, 200) : Math.min(w * 0.2, 200),
+            });
         }
     });
 
@@ -236,7 +251,7 @@ const COLOURS = ["blue", "red", "green", "purple", "orange", "pink"];
 
 
 setDefaultTimestamps();
-go();
+window.addEventListener("load", go);
 
 </script>
 {% endblock %}

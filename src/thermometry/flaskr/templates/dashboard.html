@@ -109,7 +109,7 @@ function setupPlots(num_plots) {
     const opts_main = {
         title: TITLE,
         width: w,
-        height: Math.min(w * 0.3, 200),
+        height: w < 700 ? Math.min(w * 0.5, 300) : Math.min(w * 0.3, 300),
         focus: {
             alpha: 0.3,
         },
@@ -134,8 +134,8 @@ function setupPlots(num_plots) {
     for (const i of SUBPLOT_ORDER) {
         // Plot [data[0] (timestamps), data[i] (sensor data)]
         let opts = {
-            width: w < 700 ? w : Math.floor(w/2),
-            height: w < 700 ? Math.min(w * 0.3, 200) : Math.min(w * 0.2, 200),
+            width: w < 700 ? w : Math.floor(w/2 * 0.95),
+            height: w < 700 ? Math.min(w * 0.5, 200) : Math.min(w * 0.2, 200),
             focus: {
                 alpha: 0.3,
             },

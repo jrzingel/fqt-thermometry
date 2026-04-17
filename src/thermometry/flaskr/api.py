@@ -115,7 +115,7 @@ class GaugesResponseSchema(Schema):
 @bp.post("/v1/gauges")
 @bp.input(GaugesRequestSchema)
 @bp.output(GaugesResponseSchema)
-@bp.doc(summary="Get the latest reading for a particular sensor. This is the only endpoint that can be used to fetch both non-historical and historical readings.")
+@bp.doc(summary="Get the latest reading for a particular sensor. This can only fetch non-historical readings.")
 def getGauges(json_data : dict):
     """Get the latest readings of a given sensors from lastest-db only."""
     df = fetch_latest_readings(json_data["query"])

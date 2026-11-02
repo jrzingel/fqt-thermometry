@@ -4,9 +4,16 @@ FRIDGE_KEYS = {  # secrets for uploading data
     "fridge3": "e45e8a48-096e-4d5e-b987-b849cce7de2e",
 }
 SIDEBAR_FRIDGES = ["fridge1", "fridge2", "fridge3"]  # what to show in the sidebar of the website
-ALERT_PATH = "src/thermometry/alarm/status.json"
-ALERT_CHANGE_PATH = "src/thermometry/alarm/changes.json"
-ALERT_CONFIG_YAML_PATH = "/src/thermometry/config.example.yaml"
+# -- alerts ------------------------------------------------------------------
+# Alert state lives in the database now; there are no status.json / changes.json files.
+
+# Alert types that gate the experimental interlock. For these, "we cannot tell" is reported as
+# ALARM rather than silence, so that a dead evaluator or a stale listener fails safe.
+INTERLOCK_ALERTS = ["Critical"]
+
+# Seconds the alarm evaluator may go silent before the website stops trusting the alert states
+# it wrote and reports the interlock alerts as ALARM. Two missed 30 s ticks plus slack.
+ALERT_HEARTBEAT_STALE_S = 150
 DATABASE = {
     "dbname": "thermometry",
     "user": "user",

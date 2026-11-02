@@ -382,9 +382,9 @@ class ListenerWorker(threading.Thread):
         file_positions["status"] = self.find_sync_position(
             self.log_path(today, config["status"]), self.get_latest_time("oil_temp"), "status")
 
-        # Flow is only recorded as a latest measurement, so just skip to the end of the file
-        flow_path = self.log_path(today, config["flow"])
-        file_positions["flow"] = os.path.getsize(flow_path) if os.path.exists(flow_path) else 0
+        # Flow is now stored historically, so resume from wherever the server got to
+        file_positions["flow"] = self.find_sync_position(
+            self.log_path(today, config["flow"]), self.get_latest_time("flow"), "flow")
 
         self.log("Starting file positions: {}".format(file_positions))
         return file_positions
@@ -419,6 +419,47 @@ class ListenerWorker(threading.Thread):
             self.upload_reading(read_time, "water_out", celsius_or_kelvin_to_celsius(records["cpatempwo"]))  # CELSIUS
         if "tc400actualspd" in records:  # turbo speed (tc400) (note there are two in parallel but we only log one)
             self.upload_reading(read_time, "turbo_speed", records["tc400actualspd"])  # Hertz
+
+        # Compressor fault/health words.
+        # These matter because they LATCH in the compressor: after a chiller outage trips the
+        # compressor on over-temperature the oil cools back down within minutes, but the error
+        # word stays set. The alarm system uses them to tell "compressor stopped" apart from
+        # "compressor is merely cool".
+        if "cpastate" in records:  # compressor state machine value
+            self.upload_reading(read_time, "comp_state", records["cpastate"])
+        if "cpaerr" in records:  # compressor error word (0 = no error)
+            self.upload_reading(read_time, "comp_error", records["cpaerr"])
+        if "cpawarn" in records:  # compressor warning word (0 = no warning)
+            self.upload_reading(read_time, "comp_warn", records["cpawarn"])
+        if "cpacurrent" in records:  # compressor motor current (Amps). Falls to ~0 when not running
+            self.upload_reading(read_time, "comp_current", records["cpacurrent"])
+        if "cpahours" in records:  # compressor running hours. Stops advancing when stopped
+            self.upload_reading(read_time, "comp_hours", records["cpahours"])
+        if "cpatemph" in records:  # helium discharge temperature (newer)
+            self.upload_reading(read_time, "helium_temp", celsius_or_kelvin_to_celsius(records["cpatemph"]))  # CELSIUS
+        if "cptemph" in records:  # helium discharge temperature (older)
+            self.upload_reading(read_time, "helium_temp", celsius_or_kelvin_to_celsius(records["cptemph"]))  # KELVIN
+
+        # Helium pressures. A running compressor holds a large high/low differential; a stopped one
+        # equalises. dP is the most direct "is it actually compressing" measurement available.
+        if "cpalpa" in records:  # low side, averaged (newer)
+            self.upload_reading(read_time, "comp_lp", records["cpalpa"])
+        elif "cpalp" in records:  # low side, instantaneous (newer)
+            self.upload_reading(read_time, "comp_lp", records["cpalp"])
+        elif "cpavgl" in records:  # low side, averaged (older)
+            self.upload_reading(read_time, "comp_lp", records["cpavgl"])
+        if "cpahpa" in records:  # high side, averaged (newer)
+            self.upload_reading(read_time, "comp_hp", records["cpahpa"])
+        elif "cpahp" in records:  # high side, instantaneous (newer)
+            self.upload_reading(read_time, "comp_hp", records["cpahp"])
+        elif "cpavgh" in records:  # high side, averaged (older)
+            self.upload_reading(read_time, "comp_hp", records["cpavgh"])
+        if "cpadp" in records:  # differential, if the software reports it directly
+            self.upload_reading(read_time, "comp_dp", records["cpadp"])
+
+        # Turbo run flag. turbo_speed alone cannot distinguish "stopped" from "not reported".
+        if "tc400pumpstatn" in records:
+            self.upload_reading(read_time, "turbo_on", records["tc400pumpstatn"])
 
         # Optionally check the second compressor status if it exists (for XLD systems)
         if "cparun_2" in records:

@@ -1,11 +1,23 @@
-from .PulseTubeOff import PulseTubeOff
-from .MxcAbove1K import MxcAbove1K
-from .UnresponsiveFridge import UnresponsiveFridge
+from .Alert import Alert, State
+from .CoolingLost import CoolingLost
+from .Critical import Critical
+from .FridgeWarming import FridgeWarming
 from .HotOilTemp import HotOilTemp
+from .HotWaterTemp import HotWaterTemp
 from .LosingVacuum import LosingVacuum
 from .MagnetQuench import MagnetQuench
-from .HotWaterTemp import HotWaterTemp
-from .Critical import Critical
-from .Alert import State
+from .MxcAbove1K import MxcAbove1K
+from .PulseTubeOff import PulseTubeOff
+from .UnresponsiveFridge import UnresponsiveFridge
 
-__all__ = ['State', 'PulseTubeOff', 'MxcAbove1K', 'UnresponsiveFridge', 'HotOilTemp', 'LosingVacuum', 'MagnetQuench', 'HotWaterTemp', 'Critical']
+#: Alert types configurable from config.yaml. Watchtower looks alerts up here by name rather
+#: than eval()ing the YAML key, which used to make config.yaml arbitrary code execution.
+REGISTRY = {
+    cls.__name__: cls
+    for cls in (
+        CoolingLost, Critical, FridgeWarming, HotOilTemp, HotWaterTemp,
+        LosingVacuum, MagnetQuench, MxcAbove1K, PulseTubeOff, UnresponsiveFridge,
+    )
+}
+
+__all__ = ['Alert', 'State', 'REGISTRY'] + list(REGISTRY)

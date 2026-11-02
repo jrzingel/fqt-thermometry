@@ -25,7 +25,8 @@ uv run all              # Both simultaneously (production)
 Requires PostgreSQL with TimescaleDB extension.
 ```bash
 sudo -u postgres psql -c "CREATE DATABASE thermometry"
-uv run -- flask --app thermometry.flaskr init-db
+uv run -- flask --app thermometry.flaskr init-db             # DROPS ALL TABLES
+uv run -- flask --app thermometry.flaskr upgrade-db          # additive migration for live deployments
 uv run -- flask --app thermometry.flaskr create-default-fridges
 uv run -- flask --app thermometry.flaskr add-fridge <name>
 uv run -- flask --app thermometry.flaskr add-sensor <name> <fridge_id> <0|1>
@@ -41,13 +42,22 @@ uv run build-watchdog    # Watchdog .exe for website monitoring
 ### No Test Suite
 There is no formal test suite. Use `create-dummy-data` for manual testing.
 
+`uv run backtest --scenarios` is the closest thing to one for the alarm logic: it replays synthetic
+incidents (chiller outage, brief blip, planned warm-up, and degraded-sensor variants) through the
+real detectors and asserts which should fire. It needs no database. `uv run backtest --fridge X
+--from ... --to ...` replays recorded history instead.
+
 ## Architecture
 
 The system has four independently deployed components:
 
 1. **Web Server + API** (`src/thermometry/flaskr/`) — Flask/APIFlask app served via Waitress. `api.py` handles REST endpoints under `/api/v1/`, `dashboard.py` serves the HTML UI under `/dashboard/`. `db.py` manages PostgreSQL/TimescaleDB connections and CLI commands. The database uses a dual-table strategy: `measurement` (hypertable for history) and `latest_reading` (most recent per sensor).
 
-2. **Alert System** (`src/thermometry/alarm/`) — `Watchtower.py` orchestrates scheduled checks every 30 seconds. Individual alert classes in `alerts/` inherit from `Alert.py` which implements a state machine (DISABLED → ENABLED → ALARM → MANUALLY_DISABLED). Alerts send Teams messages via webhook.
+2. **Alert System** (`src/thermometry/alarm/`) — `Watchtower.py` orchestrates scheduled checks every 30 seconds, reading Postgres directly (not the REST API). Individual alert classes in `alerts/` inherit from `Alert.py`, a state machine of DISABLED → ENABLED → ALARM → MANUALLY_DISABLED plus UNKNOWN for missing or stale data. Alert state, the transition audit trail and the evaluator heartbeat live in the `alert_state`, `alert_event` and `evaluator_heartbeat` tables — there are no status.json/changes.json files any more.
+
+   Each tick builds one `Observation` per fridge (`observation.py`) from a single query, carrying a window of history so detectors can reason about trends and latches rather than instantaneous values. `cooling.py` holds the shared "has this fridge lost cooling power, and was that deliberate" logic used by `CoolingLost` (notify) and `Critical` (interlock). `backtest.py` replays either against recorded or synthetic data.
+
+   `Critical` gates the experimental interlock: Charizard polls `/dashboard/alerts/Critical.json` for `state == "ALARM"`. That contract is frozen, but it fails safe — a stale evaluator heartbeat, stale fridge data, or a fridge with no `Critical` configured are all served as `ALARM`. `Critical` latches until acknowledged on the alerts page.
 
 3. **Listener** (`src/listener/`) — Deployed as a PyInstaller executable on each fridge PC. `listener.py` watches BlueFors log files, parses multiple log formats, and uploads readings to the central API with HMAC-SHA256 signatures. Configured via `fridge.yaml`.
 
@@ -66,6 +76,7 @@ Listener requires `fridge.yaml` alongside the executable (example at `src/listen
 ## Key Technical Details
 
 - **API authentication**: Listener uploads are validated with HMAC-SHA256 signatures; each fridge has a unique secret key in `config.py`
+- **Sensor storage**: `sensor.latest` selects whether full history is kept in the `measurement` hypertable. `latest_reading` is always upserted either way, so the gauges page works regardless. The compressor and pump signals (`pulse_on`, `oil_temp`, `water_in/out`, `flow`, `turbo_speed`) are historical so alarms can see how they move
 - **Database**: TimescaleDB hypertable with 1-week chunks, auto-compression after 2 months
 - **Frontend**: Jinja2 templates + vanilla JavaScript with uPlot.js for charts, Tailwind CSS for styling
 - **Python**: Requires >=3.12

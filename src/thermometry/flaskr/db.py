@@ -6,6 +6,8 @@ import pandas as pd
 import psycopg2
 from flask import current_app, g
 
+from thermometry import store
+
 
 def get_db():
     """Return the current database connection"""
@@ -58,7 +60,8 @@ def add_sensor(name: str, fridge_id: int, latest=0) -> int:
         INSERT INTO sensor (name, fridge_id, latest)
         VALUES (%s, %s, %s)
         ON CONFLICT (name, fridge_id) DO UPDATE
-            SET name = EXCLUDED.name
+            SET name = EXCLUDED.name,
+                latest = EXCLUDED.latest
         RETURNING id
         """, (name, fridge_id, latest))
     s_id = cursor.fetchone()[0]
@@ -68,22 +71,57 @@ def add_sensor(name: str, fridge_id: int, latest=0) -> int:
     return s_id
 
 
+DEFAULT_FRIDGES = ["queenie", "scarlett", "tallulah", "ursula", "venus", "winona"]
+
+# Plate temperatures and gas-handling pressures.
+PLATE_SENSORS = ["50K", "4K", "magnet", "still", "mxc"]
+PRESSURE_SENSORS = ["P1", "P2", "P3", "P4", "P5", "P6"]
+
+# Compressor and pump signals. These used to be latest-only, which meant no history was kept
+# for them at all -- so no alarm could ask "has the compressor been off for ten minutes?" or
+# "was the oil hot three quarters of an hour ago?". They are historical now; the volume is
+# negligible because BlueFors only writes a log line about once a minute.
+COMPRESSOR_SENSORS = [
+    "pulse_on",      # cparun: compressor running
+    "oil_temp",      # cpatempo / cptempo
+    "water_in",      # cpatempwi / cptempwi
+    "water_out",     # cpatempwo / cptempwo
+    "helium_temp",   # cpatemph / cptemph: helium discharge
+    "comp_state",    # cpastate: state machine value
+    "comp_error",    # cpaerr: error word, latches across an over-temperature trip
+    "comp_warn",     # cpawarn: warning word
+    "comp_current",  # cpacurrent: motor current, ~0 when not running
+    "comp_hours",    # cpahours: running hours, stops advancing when stopped
+    "comp_lp",       # cpalpa / cpalp / cpavgl: low side pressure
+    "comp_hp",       # cpahpa / cpahp / cpavgh: high side pressure
+    "comp_dp",       # cpadp: differential, where reported directly
+]
+PUMP_SENSORS = [
+    "flow",          # mixture circulation
+    "turbo_speed",   # tc400actualspd
+    "turbo_on",      # tc400pumpstatn
+]
+
+# Everything is historical now. `latest` means "keep history too" rather than "instead of":
+# `latest_reading` is always upserted, so the gauges page works either way.
+HISTORICAL_SENSORS = PLATE_SENSORS + PRESSURE_SENSORS + COMPRESSOR_SENSORS + PUMP_SENSORS
+
+# The subset that existing deployments still have flagged latest-only, used by `upgrade-db`.
+PROMOTED_SENSORS = ["pulse_on", "oil_temp", "water_in", "water_out", "flow", "turbo_speed"]
+
+
 def create_default_fridges():
     """Create the default fridges and associated sensors"""
-    fridges = ["queenie", "scarlett", "tallulah", "ursula", "venus", "winona"]
-    sensors = ["50K", "4K", "magnet", "still", "mxc", "P1", "P2", "P3", "P4", "P5", "P6"]
-    latest_sensors = ["pulse_on", "oil_temp", "water_in", "water_out", "flow", "turbo_speed"]
-    for fridge in fridges:
+    for fridge in DEFAULT_FRIDGES:
         f_id = add_fridge(fridge)
         print(fridge, f_id)
-        for sensor in sensors:
+        for sensor in HISTORICAL_SENSORS:
             add_sensor(sensor, f_id, False)
-        for sensor in latest_sensors:
-            add_sensor(sensor, f_id, True)
-            
+
+    # XLD systems log a second compressor, which the listener uploads as its own pseudo-fridge
     winona2_id = add_fridge("winona2")
-    for sensor in ["pulse_on", "oil_temp", "water_temp"]:  # We only need the compressor settings
-        add_sensor(sensor, winona2_id, True)
+    for sensor in COMPRESSOR_SENSORS:  # We only need the compressor settings
+        add_sensor(sensor, winona2_id, False)
 
 
 def create_dummy_data():
@@ -119,81 +157,116 @@ def create_dummy_data():
             'INSERT INTO measurement (time, sensor_id, reading) VALUES (%s, %s, %s);', tuples
         )
 
-    # Do latest data
+    # Mirror the most recent historical point into latest_reading for every sensor, the same
+    # way addReading does in production. Sensors still flagged latest-only get a value too.
+    cur.execute("""
+    INSERT INTO latest_reading (sensor_id, time, reading)
+    SELECT DISTINCT ON (sensor_id) sensor_id, time, reading
+    FROM measurement ORDER BY sensor_id, time DESC
+    ON CONFLICT (sensor_id) DO UPDATE SET time = excluded.time, reading = excluded.reading;
+    """)
     cur.execute("SELECT id FROM sensor WHERE latest=true;")
-    sensors = cur.fetchall()
-    for _id in sensors:
-        id = _id[0]
-        val = random.gauss(0, 10)
-        cur.execute(
-            'INSERT INTO latest_reading (time, sensor_id, reading) VALUES (%s, %s, %s)', (datetime.fromtimestamp(now), id, val)
-        )
+    for (id,) in cur.fetchall():
+        cur.execute("""
+        INSERT INTO latest_reading (sensor_id, time, reading) VALUES (%s, %s, %s)
+        ON CONFLICT (sensor_id) DO UPDATE SET time = excluded.time, reading = excluded.reading;
+        """, (id, datetime.fromtimestamp(now), random.gauss(0, 10)))
 
     db.commit()
     cur.close()
 
 
-def fetch_readings(query: list[tuple], earliest_stamp: int, latest_stamp: int, bin: int =1) -> pd.DataFrame:
-    """Fetch all sensor readings between timestamps for the given  fridge/sensor querys. Combine times into multiples of bin"""
-    # query should be of the form: [("fridge", "sensor"), ("fridge", "sensor"), ... ]
-    db = get_db()
-    cur = db.cursor()
-
-    # Build dynamic WHERE clause
-    WHERE_clause = " OR ".join([f"(f.name = %s AND s.name = %s)" for _ in query])
-    cur.execute(f"""
-    SELECT f.name AS fridge, s.name AS sensor, m.time, m.reading
-    FROM measurement m
-    JOIN sensor s ON m.sensor_id = s.id
-    JOIN fridge f ON s.fridge_id = f.id
-    WHERE ({WHERE_clause})
-    AND m.time BETWEEN %s AND %s
-    ORDER BY m.time
-    """, [v for pair in query for v in pair] + [earliest_stamp, latest_stamp])
-    result = cur.fetchall()
-    cur.close()
-
-    # Pivot records together so that they share the same time axis
-    df = pd.DataFrame.from_records(result, columns=['fridge', 'sensor', 'time', 'reading'])
-    df['time'] = pd.to_datetime(df['time'], utc=True)  # Force datetime object for daylight savings
-    df['time'] = df['time'].astype('int64') // 10**9  # Convert datetime objects to unix timestamp
-    df['time'] = (df['time'] // bin) * bin
-
-    grouped = df.groupby(['time', 'fridge', 'sensor'])['reading'].first().unstack(['fridge', 'sensor'])
-
-    # Ensure all requested columns are present
-    grouped = grouped.reindex(columns=pd.MultiIndex.from_tuples(query), fill_value=None)
-    return grouped
+def fetch_readings(query: list[tuple], earliest_stamp: int, latest_stamp: int, bin: int = 1) -> pd.DataFrame:
+    """Fetch all sensor readings between timestamps for the given fridge/sensor querys. Combine times into multiples of bin"""
+    return store.fetch_readings(get_db(), query, earliest_stamp, latest_stamp, bin)
 
 
 def fetch_latest_readings(query: list[tuple]) -> pd.DataFrame:
     """Fetch the latest sensor readings for the given fridge/sensor querys"""
-    # query should be of the form: [("fridge", "sensor"), ("fridge", "sensor"), ... ]
+    return store.fetch_latest_readings(get_db(), query)
+
+
+def upgrade_db():
+    """Bring an existing database up to date without destroying data.
+
+    `init-db` drops every table, so it cannot be used on a live deployment. This applies the
+    additive changes instead: the alert subsystem tables, the new compressor/pump sensors, and
+    the promotion of the compressor signals from latest-only to historical.
+    """
     db = get_db()
     cur = db.cursor()
 
-    # Build dynamic WHERE clause
-    WHERE_clause = " OR ".join([f"(f.name = %s AND s.name = %s)" for _ in query])
-    cur.execute(f"""
-    SELECT f.name AS fridge, s.name AS sensor, lr.time, lr.reading
-    FROM latest_reading lr
-    JOIN sensor s ON lr.sensor_id = s.id
-    JOIN fridge f ON s.fridge_id = f.id
-    WHERE ({WHERE_clause})
-    """, [v for pair in query for v in pair])
-    result = cur.fetchall()
-    cur.close()
+    # 1. Alert subsystem tables (idempotent -- mirrors the tail of schema.sql)
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS alert_state (
+        alert_type TEXT NOT NULL,
+        fridge TEXT NOT NULL,
+        state TEXT NOT NULL,
+        since TIMESTAMPTZ NOT NULL DEFAULT now(),
+        last_triggered TIMESTAMPTZ,
+        updated TIMESTAMPTZ NOT NULL DEFAULT now(),
+        pending_action TEXT,
+        detail JSONB NOT NULL DEFAULT '{}'::jsonb,
+        PRIMARY KEY (alert_type, fridge)
+    );
+    CREATE TABLE IF NOT EXISTS alert_event (
+        id BIGSERIAL PRIMARY KEY,
+        time TIMESTAMPTZ NOT NULL DEFAULT now(),
+        alert_type TEXT NOT NULL,
+        fridge TEXT NOT NULL,
+        from_state TEXT,
+        to_state TEXT NOT NULL,
+        reason TEXT,
+        detail JSONB NOT NULL DEFAULT '{}'::jsonb
+    );
+    CREATE INDEX IF NOT EXISTS idx_alert_event_time ON alert_event (time DESC);
+    CREATE INDEX IF NOT EXISTS idx_alert_event_lookup ON alert_event (alert_type, fridge, time DESC);
+    CREATE TABLE IF NOT EXISTS evaluator_heartbeat (
+        name TEXT PRIMARY KEY,
+        time TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    """)
+    click.echo("Alert subsystem tables ready.")
 
-    # Pivot records together so that they share the same time axis
-    df = pd.DataFrame.from_records(result, columns=['fridge', 'sensor', 'time', 'reading'])
-    df['time'] = pd.to_datetime(df['time'], utc=True)  # Force datetime object for daylight savings
-    return df
+    # 2. Add the new sensors to every existing fridge.
+    #    winona2-style compressor pseudo-fridges only get the compressor set.
+    cur.execute("SELECT id, name FROM fridge ORDER BY name")
+    fridges = cur.fetchall()
+    added = 0
+    for f_id, f_name in fridges:
+        cur.execute("SELECT name FROM sensor WHERE fridge_id = %s", (f_id,))
+        existing = {row[0] for row in cur.fetchall()}
+        compressor_only = existing and not (existing & set(PLATE_SENSORS))
+        wanted = COMPRESSOR_SENSORS if compressor_only else HISTORICAL_SENSORS
+        for sensor in wanted:
+            if sensor not in existing:
+                cur.execute(
+                    "INSERT INTO sensor (name, fridge_id, latest) VALUES (%s, %s, FALSE)"
+                    " ON CONFLICT (name, fridge_id) DO NOTHING", (sensor, f_id))
+                added += 1
+    click.echo(f"Added {added} new sensor rows across {len(fridges)} fridges.")
+
+    # 3. Promote the compressor/pump signals to historical.
+    #    add_sensor's ON CONFLICT could not do this before, so it needs saying explicitly.
+    cur.execute(
+        "UPDATE sensor SET latest = FALSE WHERE latest = TRUE AND name = ANY(%s)",
+        (PROMOTED_SENSORS + PUMP_SENSORS + COMPRESSOR_SENSORS,))
+    click.echo(f"Promoted {cur.rowcount} sensors from latest-only to historical.")
+
+    db.commit()
+    cur.close()
 
 
 @click.command('init-db')
 def init_db_command():
     init_db()
     click.echo('Initialized the database.')
+
+
+@click.command('upgrade-db')
+def upgrade_db_command():
+    upgrade_db()
+    click.echo('Database upgraded.')
 
 
 @click.command('create-default-fridges')
@@ -230,6 +303,7 @@ def init_app(app):
     """Initialise the app with database knowledge"""
     app.teardown_appcontext(close_db)
     app.cli.add_command(init_db_command)
+    app.cli.add_command(upgrade_db_command)
     app.cli.add_command(create_default_fridges_command)
     app.cli.add_command(create_dummy_data_command)
     app.cli.add_command(add_fridge_command)

@@ -78,7 +78,8 @@ def getLatestReading(query_data: dict):
         SELECT m.time, m.reading
         FROM measurement m
         WHERE m.sensor_id = %s
-        ORDER BY m.time DESC 
+        ORDER BY m.time DESC
+        LIMIT 1
         """, (sensor_id,))
     result = cur.fetchone()
     if result:
@@ -248,16 +249,19 @@ def addReading(json_data: dict):
     sensor_id, latest_only = result
 
     try:
-        if latest_only:
-            # Add to the latest table
-            cur.execute("""
-            INSERT INTO latest_reading (sensor_id, time, reading)
-            VALUES (%s, %s, %s)
-            ON CONFLICT(sensor_id) DO UPDATE SET
-                time = excluded.time,
-                reading = excluded.reading;
-            """, (sensor_id, json_data["time"], json_data["reading"]))
-        else:
+        # Always keep the latest-reading table current. `sensor.latest` now means "latest only";
+        # a historical sensor gets a row in both tables, so promoting a sensor to historical
+        # does not break the gauges page (which reads latest_reading exclusively).
+        cur.execute("""
+        INSERT INTO latest_reading (sensor_id, time, reading)
+        VALUES (%s, %s, %s)
+        ON CONFLICT(sensor_id) DO UPDATE SET
+            time = excluded.time,
+            reading = excluded.reading
+        WHERE latest_reading.time <= excluded.time;
+        """, (sensor_id, json_data["time"], json_data["reading"]))
+
+        if not latest_only:
             # Add to historic readings table
             cur.execute("""
             INSERT INTO measurement (time, sensor_id, reading) 
@@ -266,6 +270,7 @@ def addReading(json_data: dict):
         db.commit()
         cur.close()
     except db.IntegrityError:
+        db.rollback()
         return abort(500, "Duplicate data entry")
     return {"success": True}
 

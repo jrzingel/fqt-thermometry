@@ -1,7 +1,35 @@
 # Config file for which alerts to associate with each fridge
+#
+# Each alert type takes either a plain list of fridges, or a mapping of fridge -> threshold
+# overrides when one fridge needs different numbers from the rest. Unknown alert names are
+# logged and skipped.
+#
+#   MxcAbove1K:
+#     - fridge1
+#
+#   MxcAbove1K:
+#     fridge1: {}
+#     fridge2:
+#       alarm: 1.5
 
 alerts:
+  # The experimental interlock. Charizard polls /dashboard/alerts/Critical.json and grounds
+  # devices when it reads state == "ALARM".
+  #
+  # IMPORTANT: a fridge listed in SIDEBAR_FRIDGES but missing from here is reported as ALARM,
+  # because an absent alert is indistinguishable from a safe one. Configure every fridge whose
+  # experiments Charizard controls.
   Critical:
+    - fridge1
+    - fridge2
+
+  # Early warning that the pulse tubes have stopped. Fires well before the fridge is warm.
+  CoolingLost:
+    - fridge1
+    - fridge2
+
+  # Catch-all for a fridge warming for any reason at all
+  FridgeWarming:
     - fridge1
     - fridge2
 
@@ -27,3 +55,6 @@ alerts:
   LosingVacuum:
     - fridge1
     - fridge2
+
+#  MagnetQuench:  # only for fridges with a magnet thermometer wired up
+#    - fridge1

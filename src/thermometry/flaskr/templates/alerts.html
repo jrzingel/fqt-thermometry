@@ -3,6 +3,11 @@
 {% block content %}
 
     <p>View the status of the FQT Live alerts. Will send a Teams message if any alarm is triggered. Manually disable if necessary. Last updated at <span id="lastUpdated">{{ last_updated }}</span></p>
+
+    <div id="evaluatorWarning" class="mt-3 p-3 rounded bg-red-100 border border-red-400 text-red-800 text-sm {% if not evaluator_stale %}hidden{% endif %}">
+        <strong>The alert evaluator is not responding.</strong>
+        Critical alerts are being reported as in alarm so that experiments fail safe. Check that the thermometry service is running.
+    </div>
     <br>
 
     <form method="post" id="actionForm">
@@ -16,105 +21,115 @@
                 <th class="py-3 px-3 md:px-6 hidden md:table-cell">Condition</th>
                 <th class="py-3 px-3 md:px-6">State</th>
                 <th class="py-3 px-3">Enabled</th>
+                <th class="py-3 px-3">Ack</th>
             </tr>
           </thead>
           <tbody class="text-gray-700">
-            {% for alert in alerts %}
-            <tr class="border-b hover:bg-gray-100">
-                <td class="py-3 px-3 md:px-6 text-sm">{{ alert.title }}</td>
-                <td class="py-3 px-3 md:px-6 text-sm">{{ alert.fridge.capitalize() }}</td>
-                <td class="py-3 px-3 md:px-6 text-sm hidden sm:table-cell">{{ alert.now }}</td>
-                <td class="py-3 px-3 md:px-6 text-sm hidden md:table-cell">{{ alert.condition }}</td>
-                <td class="py-3 px-3 md:px-6 text-xl">{% if alert.state == "ALARM" %}🚨{% elif alert.state == "ENABLED" %}🟢{% elif alert.state == "DISABLED" %}<span style="filter: grayscale(100%)">🚫</span>{% else %}🔕{% endif %}</td>
-                <td class="py-3 px-3">
-                    <label class="block w-10 h-10 flex items-center justify-center cursor-pointer">
-                        <input type="checkbox" name="action"
-                               value="{{ alert.type }}.{{ alert.fridge }}"
-                               class="hidden"
-                               {% if alert.state == 'MANUALLY_DISABLED' %}checked{% endif %}>
-
-                        <span class="text-xl">{% if alert.state == 'MANUALLY_DISABLED' %}🔴{% else %}🟢{% endif %}</span>
-                    </label>
-                </td>
-            </tr>
-            {% endfor %}
           </tbody>
         </table>
       </div>
     </form>
 
-    <script>
-        document.getElementById("actionForm").addEventListener("change", function(e) {
-            if (e.target.type === "checkbox") {
-                if (confirm('Are you sure you want to enable/disable this alert?\nChanges take up to 1 minute to apply. Please check back later.')) {
-                    console.log('Requesting alert status change');
-
-                    const data = {
-                        name: e.target.name,
-                        value: e.target.value,
-                        checked: e.target.checked
-                    };
-
-                    fetch("{{ url_for("dashboard.action_alert") }}", {
-                        method: "POST",
-                        headers: {"Content-Type": "application/json"},
-                        body: JSON.stringify(data)
-                    });
-                }
-            }
-        });
-
-    </script>
+    <p class="mt-4 text-xs text-gray-500">
+        🚨 in alarm &nbsp; 🟢 armed &nbsp; 🚫 waiting for conditions to clear &nbsp; 🔕 manually disabled &nbsp; ❓ no data
+    </p>
 
     <script>
+        const ALERTS_URL = "{{ url_for('dashboard.view_alert', alert_type='all') }}";
+        const ACTION_URL = "{{ url_for('dashboard.action_alert') }}";
+        const ACK_URL = "{{ url_for('dashboard.acknowledge_alert') }}";
+
         const STATE_EMOJI = {
             ALARM: '🚨',
             ENABLED: '🟢',
             DISABLED: '<span style="filter: grayscale(100%)">🚫</span>',
-            MANUALLY_DISABLED: '🔕'
+            MANUALLY_DISABLED: '🔕',
+            UNKNOWN: '❓'
         };
 
         function capitalize(s) {
             return s && s[0].toUpperCase() + s.slice(1);
         }
 
+        function escapeHtml(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        function renderAlerts(data) {
+            document.getElementById('lastUpdated').textContent = data.last_updated;
+            document.getElementById('evaluatorWarning').classList.toggle('hidden', !data.evaluator_stale);
+
+            const tbody = document.querySelector('#actionForm tbody');
+            tbody.innerHTML = '';
+
+            data.alerts.forEach(alert => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b hover:bg-gray-100';
+
+                const isManuallyDisabled = alert.state === 'MANUALLY_DISABLED';
+                const target = `${alert.type}.${alert.fridge}`;
+
+                // Acknowledging is how a latched alarm is released, so only offer it when one is up
+                const ack = alert.state === 'ALARM'
+                    ? `<button type="button" class="ackButton px-2 py-1 text-xs rounded bg-gray-200 hover:bg-gray-300"
+                               data-target="${escapeHtml(target)}">Ack</button>`
+                    : '';
+
+                tr.innerHTML = `
+                    <td class="py-3 px-3 md:px-6 text-sm">${escapeHtml(alert.title)}</td>
+                    <td class="py-3 px-3 md:px-6 text-sm">${escapeHtml(capitalize(alert.fridge))}</td>
+                    <td class="py-3 px-3 md:px-6 text-sm hidden sm:table-cell">${escapeHtml(alert.now)}</td>
+                    <td class="py-3 px-3 md:px-6 text-sm hidden md:table-cell">${escapeHtml(alert.condition)}</td>
+                    <td class="py-3 px-3 md:px-6 text-xl">${STATE_EMOJI[alert.state] || ''}</td>
+                    <td class="py-3 px-3">
+                        <label class="block w-10 h-10 flex items-center justify-center cursor-pointer">
+                            <input type="checkbox" name="action"
+                                   value="${escapeHtml(target)}"
+                                   class="hidden"
+                                   ${isManuallyDisabled ? 'checked' : ''}>
+                            <span class="text-xl">${isManuallyDisabled ? '🔴' : '🟢'}</span>
+                        </label>
+                    </td>
+                    <td class="py-3 px-3">${ack}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
         function refreshAlerts() {
-            fetch("{{ url_for('dashboard.view_alert', alert_type='all') }}")
+            fetch(ALERTS_URL)
                 .then(r => r.json())
-                .then(data => {
-                    document.getElementById('lastUpdated').textContent = data.last_updated;
-
-                    const tbody = document.querySelector('#actionForm tbody');
-                    tbody.innerHTML = '';
-
-                    data.alerts.forEach(alert => {
-                        const tr = document.createElement('tr');
-                        tr.className = 'border-b hover:bg-gray-100';
-
-                        const isManuallyDisabled = alert.state === 'MANUALLY_DISABLED';
-
-                        tr.innerHTML = `
-                            <td class="py-3 px-3 md:px-6 text-sm">${alert.title}</td>
-                            <td class="py-3 px-3 md:px-6 text-sm">${capitalize(alert.fridge)}</td>
-                            <td class="py-3 px-3 md:px-6 text-sm hidden sm:table-cell">${alert.now || ''}</td>
-                            <td class="py-3 px-3 md:px-6 text-sm hidden md:table-cell">${alert.condition || ''}</td>
-                            <td class="py-3 px-3 md:px-6 text-xl">${STATE_EMOJI[alert.state] || ''}</td>
-                            <td class="py-3 px-3">
-                                <label class="block w-10 h-10 flex items-center justify-center cursor-pointer">
-                                    <input type="checkbox" name="action"
-                                           value="${alert.type}.${alert.fridge}"
-                                           class="hidden"
-                                           ${isManuallyDisabled ? 'checked' : ''}>
-                                    <span class="text-xl">${isManuallyDisabled ? '🔴' : '🟢'}</span>
-                                </label>
-                            </td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
-                })
+                .then(renderAlerts)
                 .catch(err => console.error('Failed to refresh alerts:', err));
         }
 
-        setInterval(refreshAlerts, 60000);
+        document.getElementById("actionForm").addEventListener("change", function(e) {
+            if (e.target.type !== "checkbox") return;
+            if (!confirm('Are you sure you want to enable/disable this alert?')) {
+                e.target.checked = !e.target.checked;
+                return;
+            }
+            fetch(ACTION_URL, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({name: e.target.name, value: e.target.value, checked: e.target.checked})
+            }).then(refreshAlerts);
+        });
+
+        document.getElementById("actionForm").addEventListener("click", function(e) {
+            const button = e.target.closest('.ackButton');
+            if (!button) return;
+            if (!confirm('Acknowledge this alarm?\nOnly do this once the fridge is safe -- a latched critical alarm will not clear by itself.')) return;
+            fetch(ACK_URL, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({value: button.dataset.target})
+            }).then(refreshAlerts);
+        });
+
+        refreshAlerts();
+        setInterval(refreshAlerts, 15000);
     </script>
 {% endblock %}

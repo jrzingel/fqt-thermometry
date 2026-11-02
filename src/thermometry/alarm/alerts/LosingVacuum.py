@@ -8,55 +8,56 @@ Alert for when the vacuum can pressure is lost
 """
 
 from .Alert import Alert
-import numpy as np
 
 # From running this script it appears that sometimes there is a small pressure fluctuation
 # so you really need it to be greater than threshold for n consecutive measurements (on average)
 
+
 class LosingVacuum(Alert):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.n = 8  # Number of points to average over. This is run every 30 seconds
-        self.history = [np.nan] * self.n
+    sensors = ("P1",)
 
-    def update_data(self) -> dict:
-        return {
-            "P1": self._get_latest("P1")
-        }
+    defaults = {
+        "alarm": 7.0e-6,
+        "enable": 6.5e-6,
+        "disable": 100.0e-6,
+        "median_window_min": 4,   # the rolling median this used to keep in memory, as a query
+    }
 
-    def is_in_alarm(self) -> bool:
-        # check if it is > 1e-5
-        if "reading" in self.data["P1"].keys():
-            # Add reading to array and shift them over
-            self.history.pop(0)
-            self.history.append(self.data["P1"]["reading"])
+    def is_in_alarm(self, obs) -> bool:
+        # Median over the window so a single pressure spike is ignored. This used to be an
+        # in-memory ring buffer that reset to empty on every restart.
+        median = obs.median("P1", self.opt("median_window_min"))
+        return median is not None and median > self.opt("alarm")
 
-            avg = np.median(self.history)  # So high values are ignored
+    def should_enable(self, obs) -> bool:
+        p1 = obs.latest("P1")
+        return p1 is not None and p1 <= self.opt("enable")
 
-            if np.isnan(avg):
-                # It hasn't been n minutes yet
-                return False
-            return avg > 7.0e-6
-        return False
-
-    def should_enable(self) -> bool:
-        if self.if_below_threshold("P1", 6.5e-6):
-            return True
-        return False
-
-    def should_disable(self) -> bool:
-        return self.if_above_threshold("P1", 100.0e-6)
-
-    @property
-    def description(self) -> str:
-        return "Vacuum can pressure (P1) average has increased over 7e-6 mBar over the last 4 minutes. Fridge will begin to (or is already) warm soon. Alarm disabled until pressure P1 drops below 6.5e-6 mBar."
-
-    @property
-    def describe_condition(self):
-        if "reading" in self.data["P1"].keys():
-            return f"P1 = {self.data['P1']['reading']} mBar | Alarm > 7e-6 mBar, Enabled < 6.5e-6 mBar"
-        return ""
+    def should_disable(self, obs) -> bool:
+        p1 = obs.latest("P1")
+        return p1 is not None and p1 >= self.opt("disable")
 
     @property
     def title(self) -> str:
-        return "P1 (Vacuum can) pressure above 7e-6 mBar"
+        return f"P1 (Vacuum can) pressure above {self.opt('alarm'):.0e} mBar"
+
+    @property
+    def description(self) -> str:
+        return (f"Vacuum can pressure (P1) median has increased over {self.opt('alarm'):.0e} mBar "
+                f"over the last {self.opt('median_window_min')} minutes. Fridge will begin to (or is "
+                f"already) warm soon. Alarm disabled until pressure P1 drops below "
+                f"{self.opt('enable'):.1e} mBar.")
+
+    @property
+    def now_text(self) -> str:
+        p1 = self.obs.latest("P1")
+        median = self.obs.median("P1", self.opt("median_window_min"))
+        if p1 is None:
+            return "?"
+        if median is None:
+            return f"P1 = {p1:.2e} mBar"
+        return f"P1 = {p1:.2e} mBar (median {median:.2e})"
+
+    @property
+    def condition_text(self) -> str:
+        return f"Alarm > {self.opt('alarm'):.0e} mBar, Enabled < {self.opt('enable'):.1e} mBar"

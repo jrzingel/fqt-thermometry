@@ -4,33 +4,36 @@ from .Alert import Alert
 
 
 class MxcAbove1K(Alert):
-    def update_data(self) -> dict:
-        return {
-            "mxc": self._get_latest("mxc")
-        }
+    sensors = ("mxc",)
 
-    def is_in_alarm(self) -> bool:
-        # We have the reading, check if it is > 1K
-        if "reading" in self.data["mxc"].keys() and self.data["mxc"]["reading"] < 1.0:
-            return False
-        return True  # Default to alarm state (also if no data exists)
+    defaults = {"alarm": 1.0, "enable": 0.9, "disable": 100.0}
 
-    def should_enable(self) -> bool:
-        return self.if_below_threshold("mxc", 0.9)
+    def is_in_alarm(self, obs) -> bool:
+        mxc = obs.latest("mxc")
+        return mxc is not None and mxc >= self.opt("alarm")
 
-    def should_disable(self) -> bool:
-        return self.if_above_threshold("mxc", 100)
+    def should_enable(self, obs) -> bool:
+        mxc = obs.latest("mxc")
+        return mxc is not None and mxc <= self.opt("enable")
 
-    @property
-    def description(self) -> str:
-        return "Mixing chamber temperature has risen above 1K. Alarm disabled until temperature is below 900 mK."
-
-    @property
-    def describe_condition(self):
-        if "reading" in self.data["mxc"].keys():
-            return f"MXC = {self.data['mxc']['reading']*1000:.4f} mK | Alarm > 1.0 K, 0.9 K > Enabled"
-        return ""
+    def should_disable(self, obs) -> bool:
+        mxc = obs.latest("mxc")
+        return mxc is not None and mxc >= self.opt("disable")
 
     @property
     def title(self) -> str:
         return "MXC Temperature above 1K"
+
+    @property
+    def description(self) -> str:
+        return (f"Mixing chamber temperature has risen above {self.opt('alarm')}K. "
+                f"Alarm disabled until temperature is below {self.opt('enable') * 1000:.0f} mK.")
+
+    @property
+    def now_text(self) -> str:
+        mxc = self.obs.latest("mxc")
+        return f"MXC = {mxc * 1000:.4f} mK" if mxc is not None else "?"
+
+    @property
+    def condition_text(self) -> str:
+        return f"Alarm > {self.opt('alarm')} K, {self.opt('enable')} K > Enabled"

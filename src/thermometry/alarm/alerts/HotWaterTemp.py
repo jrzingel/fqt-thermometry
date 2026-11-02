@@ -15,33 +15,33 @@ from .Alert import Alert
 # Enabled < 19,  20 < ALARM
 
 class HotWaterTemp(Alert):
-    def update_data(self):
-        return {
-            "water_temp": self._get_latest("water_in")
-        }
+    sensors = ("water_in",)
 
-    def is_in_alarm(self) -> bool:
-        # We have the reading, check if it is > 38C
-        if "reading" in self.data["water_temp"].keys():
-            return self.data["water_temp"]["reading"] > 20.0
-        return True  # Default to alarm state (also if no data exists)
+    defaults = {"alarm": 20.0, "enable": 19.0}
 
-    def should_enable(self):
-        return self.if_below_threshold("water_temp", 19.0)
+    def is_in_alarm(self, obs) -> bool:
+        water = obs.latest("water_in")
+        return water is not None and water > self.opt("alarm")
 
-    def should_disable(self) -> bool:
-        return False  # Never disable if active
-
-    @property
-    def description(self) -> str:
-        return "Compressor input water temperature is above 20C. The roof chiller has likely failed and so the compressor will too if it is on. Alarm disabled until input water temperature is below 19C."
-
-    @property
-    def describe_condition(self) -> str:
-        if "reading" in self.data["water_temp"].keys():
-            return f"Input water temp = {self.data['water_temp']['reading']:.1f} C | Alarm > 20C, 19C > Enabled"
-        return ""
+    def should_enable(self, obs) -> bool:
+        water = obs.latest("water_in")
+        return water is not None and water <= self.opt("enable")
 
     @property
     def title(self) -> str:
-        return "Input compressor water temperature exceeds 20C"
+        return f"Input compressor water temperature exceeds {self.opt('alarm'):.0f}C"
+
+    @property
+    def description(self) -> str:
+        return (f"Compressor input water temperature is above {self.opt('alarm'):.0f}C. The roof "
+                f"chiller has likely failed and so the compressor will too if it is on. Alarm "
+                f"disabled until input water temperature is below {self.opt('enable'):.0f}C.")
+
+    @property
+    def now_text(self) -> str:
+        water = self.obs.latest("water_in")
+        return f"Input water temp = {water:.1f} C" if water is not None else "?"
+
+    @property
+    def condition_text(self) -> str:
+        return f"Alarm > {self.opt('alarm'):.0f}C, {self.opt('enable'):.0f}C > Enabled"

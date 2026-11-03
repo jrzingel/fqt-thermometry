@@ -47,9 +47,8 @@ ALTER TABLE measurement SET (
     timescaledb.compress = true,
     timescaledb.compress_segmentby = 'sensor_id'
 );
-SELECT add_compression_policy('measurement', INTERVAL '2 months');
+SELECT add_compression_policy('measurement', INTERVAL '7 days');  -- almost all reads are of the last week
 
--- Indexes for fast reads
+-- Indexes for fast reads. The primary key already indexes (sensor_id, time)
 CREATE INDEX idx_measurement_time ON measurement (time DESC);
-CREATE INDEX idx_measurement_sensor_time ON measurement(sensor_id, time);
 

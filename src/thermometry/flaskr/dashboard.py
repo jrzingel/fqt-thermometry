@@ -58,7 +58,6 @@ def action_alert(json_data):
             "fridge": fridge,
             "action": state
         }]))
-    time.sleep(2)  # Wait for dramatic effect
     return '', 204
 
 

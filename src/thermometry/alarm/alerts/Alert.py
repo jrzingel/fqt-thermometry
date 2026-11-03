@@ -34,10 +34,11 @@ class Alert(object):
                 'GET',
                 self.api_url + f"/api/v1/latest?fridge={self.fridge}&sensor={sensor}",
                 headers={"Content-Type": "application/json"},
-                timeout=10
+                timeout=10,
+                retries=False  # The server keeps working on requests we give up on, so retrying a slow one only piles on load
             )
-        except urllib3.exceptions.MaxRetryError as e:
-            # Server is down
+        except urllib3.exceptions.HTTPError as e:
+            # Server is down or took too long to answer
             print(f"ERROR API server is unreachable: {e}")
             self.state = State.DISABLED  # Protect ourselves from any chaos
             return {}

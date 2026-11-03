@@ -1,24 +1,59 @@
 # Methods for controlling the SQLite DB
 
+import threading
+
 import click
 import numpy as np
 import pandas as pd
 import psycopg2
 from flask import current_app, g
+from psycopg2.pool import ThreadedConnectionPool
+
+_pool_lock = threading.Lock()
+
+
+def get_pool() -> ThreadedConnectionPool:
+    """Return the app's database connection pool, creating it on first use"""
+    pool = current_app.extensions.get("db_pool")
+    if pool is None:
+        with _pool_lock:
+            pool = current_app.extensions.get("db_pool")
+            if pool is None:
+                # One connection per waitress thread. minconn must equal maxconn, otherwise the pool
+                # closes any connection handed back while minconn others are idle
+                size = current_app.config["WEBSITE"]["threads"]
+                pool = ThreadedConnectionPool(size, size, **current_app.config["DATABASE"])
+                current_app.extensions["db_pool"] = pool
+    return pool
+
+
+def _is_alive(conn) -> bool:
+    """Check that a pooled connection still works. They die silently if PostgreSQL restarts"""
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1")
+        return True
+    except psycopg2.Error:
+        return False
 
 
 def get_db():
-    """Return the current database connection"""
+    """Return the current request's database connection, borrowed from the pool"""
     if 'db' not in g:
-        g.db = psycopg2.connect(**current_app.config["DATABASE"])
+        pool = get_pool()
+        conn = pool.getconn()
+        while not _is_alive(conn):
+            pool.putconn(conn, close=True)  # Discard it. Once the dead ones are gone the pool opens fresh ones
+            conn = pool.getconn()
+        g.db = conn
     return g.db
 
 
 def close_db(e=None):
-    """Close the current database connection"""
+    """Return the current request's database connection to the pool"""
     db = g.pop('db', None)
     if db is not None:
-        db.close()
+        get_pool().putconn(db)  # Rolls back anything left uncommitted and discards broken connections
 
 
 def init_db():

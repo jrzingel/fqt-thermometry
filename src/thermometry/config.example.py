@@ -17,7 +17,7 @@ DATABASE = {
 
 WEBSITE = {
     "port": 5000,  # recommended to keep this on 5000 and use nginx to reverse proxy to port 80
-    "threads": 3
+    "threads": 3  # also the number of database connections kept open (one per thread)
 }
 TEAMS_WEBHOOK = "..."
 SERVER_URL = "http://localhost:5000"  # from perspective of the server (used by alerts internally)

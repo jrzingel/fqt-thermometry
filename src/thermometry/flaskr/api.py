@@ -78,7 +78,8 @@ def getLatestReading(query_data: dict):
         SELECT m.time, m.reading
         FROM measurement m
         WHERE m.sensor_id = %s
-        ORDER BY m.time DESC 
+        ORDER BY m.time DESC
+        LIMIT 1
         """, (sensor_id,))
     result = cur.fetchone()
     if result:
@@ -247,25 +248,27 @@ def addReading(json_data: dict):
         abort(404, f"No sensor '{json_data['sensor']}' found for fridge '{json_data['fridge']}'")
     sensor_id, latest_only = result
 
-    try:
-        if latest_only:
-            # Add to the latest table
-            cur.execute("""
-            INSERT INTO latest_reading (sensor_id, time, reading)
-            VALUES (%s, %s, %s)
-            ON CONFLICT(sensor_id) DO UPDATE SET
-                time = excluded.time,
-                reading = excluded.reading;
-            """, (sensor_id, json_data["time"], json_data["reading"]))
-        else:
-            # Add to historic readings table
-            cur.execute("""
-            INSERT INTO measurement (time, sensor_id, reading) 
-            VALUES (%s, %s, %s)
-            """, (json_data["time"], sensor_id, json_data["reading"]))
-        db.commit()
-        cur.close()
-    except db.IntegrityError:
-        return abort(500, "Duplicate data entry")
+    if latest_only:
+        # Add to the latest table
+        cur.execute("""
+        INSERT INTO latest_reading (sensor_id, time, reading)
+        VALUES (%s, %s, %s)
+        ON CONFLICT(sensor_id) DO UPDATE SET
+            time = excluded.time,
+            reading = excluded.reading;
+        """, (sensor_id, json_data["time"], json_data["reading"]))
+    else:
+        # Add to historic readings table. A reading that is already stored (e.g. the listener
+        # retrying after a timeout) is skipped rather than rejected, so retrying is harmless
+        cur.execute("""
+        INSERT INTO measurement (time, sensor_id, reading)
+        VALUES (%s, %s, %s)
+        ON CONFLICT (sensor_id, time) DO NOTHING
+        """, (json_data["time"], sensor_id, json_data["reading"]))
+    duplicate = cur.rowcount == 0
+    db.commit()
+    cur.close()
+    if duplicate:
+        return {"success": True, "duplicate": True}
     return {"success": True}
 
